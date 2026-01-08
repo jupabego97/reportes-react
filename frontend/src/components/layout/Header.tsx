@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { ChevronRight, Home, Bell } from 'lucide-react';
 import { ThemeToggle } from '../ui/theme-toggle';
@@ -14,6 +15,8 @@ import {
 
 const routeNames: Record<string, string> = {
   '': 'Dashboard',
+  'ejecutivo': 'Ejecutivo',
+  'inventario': 'Inventario',
   'margenes': 'Análisis de Márgenes',
   'predicciones': 'Predicciones',
   'abc': 'Análisis ABC',
@@ -23,7 +26,11 @@ const routeNames: Record<string, string> = {
   'datos': 'Datos Detallados',
 };
 
-export function Header() {
+interface HeaderProps {
+  children?: ReactNode;
+}
+
+export function Header({ children }: HeaderProps) {
   const location = useLocation();
   const pathSegments = location.pathname.split('/').filter(Boolean);
 
@@ -36,46 +43,57 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
-      {/* Breadcrumbs */}
-      <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
-        {breadcrumbs.map((crumb, index) => (
-          <div key={crumb.href} className="flex items-center">
-            {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
-            {index === 0 ? (
-              <Link
-                to={crumb.href}
-                className="flex items-center hover:text-foreground transition-colors"
-              >
-                <Home className="h-4 w-4" />
-              </Link>
-            ) : index === breadcrumbs.length - 1 ? (
-              <span className="font-medium text-foreground">{crumb.name}</span>
-            ) : (
-              <Link
-                to={crumb.href}
-                className="hover:text-foreground transition-colors"
-              >
-                {crumb.name}
-              </Link>
-            )}
-          </div>
-        ))}
-      </nav>
+    <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 md:px-6">
+      {/* Left side: Mobile menu + Breadcrumbs */}
+      <div className="flex items-center gap-2">
+        {/* Mobile menu button slot */}
+        {children}
+
+        {/* Breadcrumbs - hidden on mobile, simplified */}
+        <nav className="hidden sm:flex items-center space-x-1 text-sm text-muted-foreground">
+          {breadcrumbs.map((crumb, index) => (
+            <div key={crumb.href} className="flex items-center">
+              {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
+              {index === 0 ? (
+                <Link
+                  to={crumb.href}
+                  className="flex items-center hover:text-foreground transition-colors"
+                >
+                  <Home className="h-4 w-4" />
+                </Link>
+              ) : index === breadcrumbs.length - 1 ? (
+                <span className="font-medium text-foreground">{crumb.name}</span>
+              ) : (
+                <Link
+                  to={crumb.href}
+                  className="hover:text-foreground transition-colors"
+                >
+                  {crumb.name}
+                </Link>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        {/* Mobile: Show current page name only */}
+        <span className="sm:hidden text-sm font-medium text-foreground truncate max-w-[150px]">
+          {breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 1].name : 'Dashboard'}
+        </span>
+      </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 md:gap-2">
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+            <Button variant="ghost" size="icon" className="relative h-9 w-9">
+              <Bell className="h-4 w-4 md:h-5 md:w-5" />
+              <Badge className="absolute -top-1 -right-1 h-4 w-4 md:h-5 md:w-5 p-0 flex items-center justify-center text-[10px] md:text-xs">
                 3
               </Badge>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="w-72 md:w-80">
             <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
