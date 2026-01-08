@@ -156,7 +156,7 @@ export function Margenes() {
                       padding={0.3}
                       layout="horizontal"
                       valueScale={{ type: 'linear' }}
-                      colors={({ data }) => data.color}
+                      colors={({ data }) => String(data.color)}
                       borderRadius={4}
                       axisBottom={{
                         tickSize: 5,

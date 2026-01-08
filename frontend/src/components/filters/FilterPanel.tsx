@@ -9,12 +9,12 @@ import { MultiSelect } from '../ui/multi-select';
 import { Slider } from '../ui/slider';
 import { useFiltersStore } from '../../stores/useFiltersStore';
 import { useFiltrosOpciones } from '../../hooks/useApi';
-import { cn } from '../../lib/utils';
+// cn import removed - not used
 
 export function FilterPanel() {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { data: opciones, isLoading } = useFiltrosOpciones();
-  
+  const { data: opciones } = useFiltrosOpciones();
+
   const {
     fechaInicio,
     fechaFin,

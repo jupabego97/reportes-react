@@ -4,14 +4,11 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { ResponsiveBar } from '@nivo/bar';
 import { ResponsivePie } from '@nivo/pie';
-import { ResponsiveLine } from '@nivo/line';
+// ResponsiveLine removed - not used directly
 import {
   Package,
   TrendingUp,
-  TrendingDown,
   ArrowUpRight,
-  ArrowDownRight,
-  Lightbulb,
   Filter
 } from 'lucide-react';
 import { FilterPanel } from '../components/filters/FilterPanel';
@@ -171,14 +168,14 @@ export function AnalisisABC() {
     color: categoryColors[p.categoria as keyof typeof categoryColors],
   })) || [];
 
-  // Datos para línea de Pareto
-  const lineData = [{
-    id: '% Acumulado',
-    data: paretoData.map(p => ({
-      x: p.producto,
-      y: p.acumulado,
-    })),
-  }];
+  // Datos para línea de Pareto (comentado - no usado directamente)
+  // const lineData = [{
+  //   id: '% Acumulado',
+  //   data: paretoData.map(p => ({
+  //     x: p.producto,
+  //     y: p.acumulado,
+  //   })),
+  // }];
 
   return (
     <div className="space-y-6">
@@ -493,7 +490,7 @@ export function AnalisisABC() {
                             'axes',
                             'bars',
                             // Línea del 80%
-                            ({ bars, yScale }) => {
+                            ({ yScale }) => {
                               const y80 = yScale(80 as never);
                               return (
                                 <line

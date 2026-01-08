@@ -2,26 +2,22 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+// ResponsivePie and ResponsiveLine imports removed - not used
 import { ResponsiveBar } from '@nivo/bar';
-import { ResponsivePie } from '@nivo/pie';
-import { ResponsiveLine } from '@nivo/line';
 import {
   Truck,
   TrendingUp,
-  TrendingDown,
   Package,
   DollarSign,
-  BarChart3,
   Star,
   AlertTriangle,
   Search,
   ShoppingCart,
   ArrowUpRight,
-  Download,
   RefreshCw
 } from 'lucide-react';
 import { FilterPanel } from '../components/filters/FilterPanel';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';

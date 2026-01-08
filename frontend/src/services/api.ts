@@ -39,7 +39,7 @@ class ApiClient {
 
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -72,7 +72,7 @@ class ApiClient {
 
   async getBlob(endpoint: string, params?: Record<string, any>): Promise<Blob> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -166,8 +166,14 @@ export interface Metricas {
   productos_unicos: number;
   margen_promedio: number;
   total_margen: number;
+  margen_total?: number;
   variacion_ventas?: number;
   variacion_ingresos?: number;
+  total_registros?: number;
+  precio_promedio?: number;
+  delta_ventas?: string;
+  delta_registros?: string;
+  delta_precio?: string;
 }
 
 export interface DashboardData {

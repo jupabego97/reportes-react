@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Package, Percent, Users } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Percent } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { useMetricas } from '../../hooks/useApi';
