@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-// ResponsivePie and ResponsiveLine imports removed - not used
+// ResponsivePie import removed - not used
 import { ResponsiveBar } from '@nivo/bar';
+import { ResponsiveLine } from '@nivo/line';
 import {
   Truck,
   TrendingUp,
@@ -809,7 +810,7 @@ export function Proveedores() {
                             tickRotation: -45,
                           }}
                           axisLeft={{
-                            format: (v) => `$${(Number(v) / 1000).toFixed(0)}k`,
+                            format: (v: number) => `$${(Number(v) / 1000).toFixed(0)}k`,
                           }}
                           colors={[chartColors[0]]}
                           lineWidth={3}
