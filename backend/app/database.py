@@ -14,7 +14,7 @@ def get_engine():
     return create_async_engine(
         settings.async_database_url,
         echo=settings.debug,
-        pool_pre_ping=False,  # No verificar conexión al inicio
+        pool_pre_ping=True,  # Verificar salud de conexiones antes de usarlas
         pool_size=5,
         max_overflow=10,
         connect_args={

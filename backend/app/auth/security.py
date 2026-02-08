@@ -1,18 +1,22 @@
 """
 Utilidades de seguridad para JWT y hashing.
 """
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Set
 
 from jose import JWTError, jwt
 import bcrypt
 
 from app.config import get_settings
 
-# Configuración
-SECRET_KEY = "tu-clave-secreta-muy-segura-cambiar-en-produccion-123456789"
+# Configuración desde variables de entorno
+settings = get_settings()
+SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+
+# Token blacklist en memoria (en producción usar Redis)
+_token_blacklist: Set[str] = set()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -36,9 +40,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode = data.copy()
     
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -49,8 +53,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def decode_token(token: str) -> Optional[dict]:
     """Decodifica un token JWT."""
     try:
+        if token in _token_blacklist:
+            return None
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except JWTError:
         return None
+
+
+def blacklist_token(token: str) -> None:
+    """Agrega un token a la blacklist (invalidarlo en logout)."""
+    _token_blacklist.add(token)
 

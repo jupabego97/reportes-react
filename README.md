@@ -83,13 +83,10 @@ npm install
 npm run dev
 ```
 
-## 🔑 Credenciales de Prueba
+## 🔑 Credenciales
 
-| Usuario | Contraseña | Rol |
-|---------|------------|-----|
-| admin | admin123 | Administrador |
-| vendedor | admin123 | Vendedor |
-| viewer | admin123 | Solo lectura |
+Las credenciales de acceso son gestionadas por el administrador del sistema.
+Contacta al administrador para obtener tus credenciales.
 
 ## 📁 Estructura del Proyecto
 

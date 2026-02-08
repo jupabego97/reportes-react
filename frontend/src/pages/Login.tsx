@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Loader2, LogIn, BarChart3 } from 'lucide-react';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export function Login() {
   const navigate = useNavigate();
@@ -127,10 +127,7 @@ export function Login() {
 
               <div className="mt-4 p-3 bg-muted rounded-lg">
                 <p className="text-xs text-muted-foreground text-center">
-                  <strong>Usuarios de prueba:</strong><br />
-                  admin / admin123<br />
-                  vendedor / admin123<br />
-                  viewer / admin123
+                  Contacta al administrador si no tienes credenciales.
                 </p>
               </div>
             </form>
@@ -140,4 +137,5 @@ export function Login() {
     </div>
   );
 }
+
 

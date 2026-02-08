@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.auth.dependencies import get_current_active_user
+from app.auth.models import User
 from app.models.schemas import (
     FilterParams,
     MetricasResponse,
@@ -18,7 +20,7 @@ from app.models.schemas import (
 from app.services.ventas import VentasService
 from app.routes.ventas import get_filter_params
 
-router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/api/dashboard", tags=["dashboard"], dependencies=[Depends(get_current_active_user)])
 
 
 @router.get("/metricas", response_model=MetricasResponse)
@@ -61,4 +63,5 @@ async def get_top_vendedores(
     """Obtiene top vendedores."""
     service = VentasService(db)
     return await service.get_top_vendedores(filters, limit)
+
 

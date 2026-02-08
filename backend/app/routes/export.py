@@ -11,12 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import pandas as pd
 
 from app.database import get_db
+from app.auth.dependencies import get_current_active_user
+from app.auth.models import User
 from app.models.schemas import FilterParams
 from app.services.ventas import VentasService
 from app.services.pdf_generator import PDFReportGenerator
 from app.routes.ventas import get_filter_params
 
-router = APIRouter(prefix="/api/export", tags=["export"])
+router = APIRouter(prefix="/api/export", tags=["export"], dependencies=[Depends(get_current_active_user)])
 
 
 @router.get("/csv")

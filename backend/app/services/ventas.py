@@ -141,89 +141,31 @@ class VentasService:
             ))
         return ventas
     
-    async def get_ventas(self, filters: FilterParams) -> Tuple[List[VentaBase], int]:
-        """Obtiene ventas con filtros aplicados (sin paginación)."""
-        query = "SELECT * FROM reportes_ventas_30dias WHERE 1=1"
-        params = {}
+    async def get_ventas(
+        self,
+        filters: FilterParams,
+        max_rows: int = 10000,
+    ) -> Tuple[List[VentaBase], int]:
+        """Obtiene ventas con filtros aplicados (sin paginación).
         
-        if filters.fecha_inicio:
-            query += " AND fecha_venta >= :fecha_inicio"
-            params["fecha_inicio"] = filters.fecha_inicio
+        Args:
+            filters: Parámetros de filtro.
+            max_rows: Límite máximo de filas para prevenir OOM. Default 10000.
+        """
+        where, params = self._build_where_clause(filters)
         
-        if filters.fecha_fin:
-            query += " AND fecha_venta <= :fecha_fin"
-            params["fecha_fin"] = filters.fecha_fin
-        
-        if filters.productos:
-            query += " AND nombre = ANY(:productos)"
-            params["productos"] = filters.productos
-        
-        if filters.vendedores:
-            query += " AND vendedor = ANY(:vendedores)"
-            params["vendedores"] = filters.vendedores
-        
-        if filters.familias:
-            query += " AND familia = ANY(:familias)"
-            params["familias"] = filters.familias
-        
-        if filters.metodos:
-            query += " AND metodo = ANY(:metodos)"
-            params["metodos"] = filters.metodos
-        
-        if filters.proveedores:
-            query += " AND proveedor_moda = ANY(:proveedores)"
-            params["proveedores"] = filters.proveedores
-        
-        if filters.precio_min is not None:
-            query += " AND precio >= :precio_min"
-            params["precio_min"] = filters.precio_min
-        
-        if filters.precio_max is not None:
-            query += " AND precio <= :precio_max"
-            params["precio_max"] = filters.precio_max
-        
-        if filters.cantidad_min is not None:
-            query += " AND cantidad >= :cantidad_min"
-            params["cantidad_min"] = filters.cantidad_min
-        
-        if filters.cantidad_max is not None:
-            query += " AND cantidad <= :cantidad_max"
-            params["cantidad_max"] = filters.cantidad_max
-        
-        query += " ORDER BY fecha_venta DESC, nombre"
+        query = f"""
+            SELECT * FROM reportes_ventas_30dias
+            {where}
+            ORDER BY fecha_venta DESC, nombre
+            LIMIT :max_rows
+        """
+        params["max_rows"] = max_rows
         
         result = await self.db.execute(text(query), params)
         rows = result.fetchall()
         
-        ventas = []
-        for row in rows:
-            row_dict = row._asdict()
-            precio = float(row_dict.get("precio") or 0)
-            cantidad = int(row_dict.get("cantidad") or 0)
-            precio_compra = row_dict.get("precio_promedio_compra")
-            precio_compra = float(precio_compra) if precio_compra else None
-            
-            total_venta = precio * cantidad
-            margen = (precio - precio_compra) if precio_compra else None
-            margen_porcentaje = (margen / precio * 100) if margen and precio else None
-            total_margen = (margen * cantidad) if margen else None
-            
-            ventas.append(VentaBase(
-                nombre=row_dict.get("nombre", ""),
-                precio=precio,
-                cantidad=cantidad,
-                metodo=row_dict.get("metodo"),
-                vendedor=row_dict.get("vendedor"),
-                fecha_venta=row_dict.get("fecha_venta"),
-                familia=row_dict.get("familia"),
-                proveedor_moda=row_dict.get("proveedor_moda"),
-                precio_promedio_compra=precio_compra,
-                total_venta=total_venta,
-                margen=margen,
-                margen_porcentaje=round(margen_porcentaje, 2) if margen_porcentaje else None,
-                total_margen=total_margen,
-            ))
-        
+        ventas = self._rows_to_ventas(rows)
         return ventas, len(ventas)
     
     async def get_periodo_anterior(self) -> pd.DataFrame:

@@ -13,6 +13,11 @@ export interface FilterParams {
   cantidad_max?: number;
 }
 
+export interface PaginationParams {
+  page?: number;
+  page_size?: number;
+}
+
 export interface FiltrosOpciones {
   productos: string[];
   vendedores: string[];
@@ -47,6 +52,23 @@ export interface Venta {
 export interface VentaResponse {
   data: Venta[];
   total_registros: number;
+}
+
+export interface VentasResponse {
+  data: Venta[];
+  total_registros: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface DashboardData {
+  metricas: Metricas;
+  alertas: Alerta[];
+  top_productos: TopProducto[];
+  top_vendedores: TopVendedor[];
+  ventas_por_dia: VentaPorDia[];
+  ventas_por_familia: VentaPorFamilia[];
 }
 
 // Dashboard
@@ -215,4 +237,5 @@ export interface VentaPorMetodo {
   metodo: string;
   total_venta: number;
 }
+
 

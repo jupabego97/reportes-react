@@ -1,7 +1,16 @@
 import { useAuthStore } from '../stores/useAuthStore';
-import type { PrediccionResponse } from '../types';
+import type {
+  FilterParams,
+  PaginationParams,
+  Venta,
+  VentasResponse,
+  FiltrosOpciones,
+  Metricas,
+  DashboardData,
+  PrediccionResponse,
+} from '../types';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 class ApiClient {
   private baseUrl: string;
@@ -39,7 +48,7 @@ class ApiClient {
 
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
-
+    
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -72,7 +81,7 @@ class ApiClient {
 
   async getBlob(endpoint: string, params?: Record<string, any>): Promise<Blob> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
-
+    
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -103,87 +112,8 @@ class ApiClient {
 
 export const api = new ApiClient(API_BASE_URL);
 
-// Types
-export interface FilterParams {
-  fecha_inicio?: string;
-  fecha_fin?: string;
-  productos?: string[];
-  vendedores?: string[];
-  familias?: string[];
-  metodos?: string[];
-  proveedores?: string[];
-  precio_min?: number;
-  precio_max?: number;
-  cantidad_min?: number;
-  cantidad_max?: number;
-}
-
-export interface PaginationParams {
-  page?: number;
-  page_size?: number;
-}
-
-export interface Venta {
-  nombre: string;
-  precio: number;
-  cantidad: number;
-  metodo?: string;
-  vendedor?: string;
-  fecha_venta?: string;
-  familia?: string;
-  proveedor_moda?: string;
-  precio_promedio_compra?: number;
-  total_venta: number;
-  margen?: number;
-  margen_porcentaje?: number;
-  total_margen?: number;
-}
-
-export interface VentasResponse {
-  data: Venta[];
-  total_registros: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
-
-export interface FiltrosOpciones {
-  productos: string[];
-  vendedores: string[];
-  familias: string[];
-  metodos: string[];
-  proveedores: string[];
-  fecha_min: string;
-  fecha_max: string;
-  precio_min: number;
-  precio_max: number;
-}
-
-export interface Metricas {
-  total_ventas: number;
-  total_ingresos: number;
-  ticket_promedio: number;
-  productos_unicos: number;
-  margen_promedio: number;
-  total_margen: number;
-  margen_total?: number;
-  variacion_ventas?: number;
-  variacion_ingresos?: number;
-  total_registros?: number;
-  precio_promedio?: number;
-  delta_ventas?: string;
-  delta_registros?: string;
-  delta_precio?: string;
-}
-
-export interface DashboardData {
-  metricas: Metricas;
-  alertas: any[];
-  top_productos: any[];
-  top_vendedores: any[];
-  ventas_por_dia: any[];
-  ventas_por_familia: any[];
-}
+// Re-export types for backward compatibility
+export type { FilterParams, PaginationParams, Venta, VentasResponse, FiltrosOpciones, Metricas, DashboardData };
 
 // API Functions
 export const apiService = {

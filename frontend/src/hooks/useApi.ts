@@ -1,23 +1,36 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiService } from '../services/api';
 import type { FilterParams, PaginationParams } from '../services/api';
 import { useFiltersStore } from '../stores/useFiltersStore';
 import { toast } from 'sonner';
 
-// Helper para convertir filtros del store al formato API
+// Helper para convertir filtros del store al formato API (memoizado)
 function useFilterParams(): FilterParams {
-  const filters = useFiltersStore();
-  return {
-    fecha_inicio: filters.fechaInicio || undefined,
-    fecha_fin: filters.fechaFin || undefined,
-    productos: filters.productos.length > 0 ? filters.productos : undefined,
-    vendedores: filters.vendedores.length > 0 ? filters.vendedores : undefined,
-    familias: filters.familias.length > 0 ? filters.familias : undefined,
-    metodos: filters.metodos.length > 0 ? filters.metodos : undefined,
-    proveedores: filters.proveedores.length > 0 ? filters.proveedores : undefined,
-    precio_min: filters.precioMin || undefined,
-    precio_max: filters.precioMax || undefined,
-  };
+  const fechaInicio = useFiltersStore((s) => s.fechaInicio);
+  const fechaFin = useFiltersStore((s) => s.fechaFin);
+  const productos = useFiltersStore((s) => s.productos);
+  const vendedores = useFiltersStore((s) => s.vendedores);
+  const familias = useFiltersStore((s) => s.familias);
+  const metodos = useFiltersStore((s) => s.metodos);
+  const proveedores = useFiltersStore((s) => s.proveedores);
+  const precioMin = useFiltersStore((s) => s.precioMin);
+  const precioMax = useFiltersStore((s) => s.precioMax);
+
+  return useMemo(
+    () => ({
+      fecha_inicio: fechaInicio || undefined,
+      fecha_fin: fechaFin || undefined,
+      productos: productos.length > 0 ? productos : undefined,
+      vendedores: vendedores.length > 0 ? vendedores : undefined,
+      familias: familias.length > 0 ? familias : undefined,
+      metodos: metodos.length > 0 ? metodos : undefined,
+      proveedores: proveedores.length > 0 ? proveedores : undefined,
+      precio_min: precioMin || undefined,
+      precio_max: precioMax || undefined,
+    }),
+    [fechaInicio, fechaFin, productos, vendedores, familias, metodos, proveedores, precioMin, precioMax]
+  );
 }
 
 // Query Keys

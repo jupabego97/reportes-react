@@ -3,6 +3,7 @@ from app.services.margenes import MargenesService
 from app.services.predicciones import PrediccionesService
 from app.services.abc import ABCService
 from app.services.compras import ComprasService
+from app.services.vendedores import VendedoresService
 
 __all__ = [
     "VentasService",
@@ -10,5 +11,7 @@ __all__ = [
     "PrediccionesService",
     "ABCService",
     "ComprasService",
+    "VendedoresService",
 ]
+
 

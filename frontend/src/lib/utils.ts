@@ -1,32 +1,28 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
+/**
+ * Combina clases CSS de forma inteligente usando clsx + tailwind-merge.
+ */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
+/**
+ * Formatea un número como moneda colombiana (COP).
+ */
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(value);
 }
 
+/**
+ * Formatea un número con separadores de miles.
+ */
 export function formatNumber(value: number): string {
-  return new Intl.NumberFormat('es-CO').format(value)
+  return new Intl.NumberFormat("es-CO").format(value);
 }
-
-export function formatPercent(value: number): string {
-  return `${value.toFixed(1)}%`
-}
-
-export function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString('es-CO', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-

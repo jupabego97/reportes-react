@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.auth.dependencies import get_current_active_user
+from app.auth.models import User
 from app.models.schemas import (
     FilterParams,
     VentaResponse,
@@ -21,7 +23,7 @@ from app.services.margenes import MargenesService
 from app.services.predicciones import PrediccionesService
 from app.services.abc import ABCService
 
-router = APIRouter(prefix="/api", tags=["ventas"])
+router = APIRouter(prefix="/api", tags=["ventas"], dependencies=[Depends(get_current_active_user)])
 
 
 def get_filter_params(
@@ -74,12 +76,13 @@ async def get_ventas(
 
 @router.get("/ventas/all")
 async def get_all_ventas(
+    limit: int = Query(10000, ge=1, le=50000, description="Máximo de registros a devolver"),
     filters: FilterParams = Depends(get_filter_params),
     db: AsyncSession = Depends(get_db),
 ):
-    """Obtiene todas las ventas sin paginación (para exportación)."""
+    """Obtiene todas las ventas sin paginación (para exportación). Máximo 50000 registros."""
     service = VentasService(db)
-    ventas, total = await service.get_ventas(filters)
+    ventas, total = await service.get_ventas(filters, max_rows=limit)
     return {"data": ventas, "total_registros": total}
 
 
@@ -163,24 +166,13 @@ async def get_predicciones(
     return await service.get_predicciones(filters)
 
 
-@router.get("/abc")
+@router.get("/abc", response_model=ABCResponse)
 async def get_abc(
     filters: FilterParams = Depends(get_filter_params),
-    criterio: str = Query("ventas", description="Criterio: ventas, cantidad, margen, frecuencia"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Obtiene análisis ABC con criterio seleccionado."""
+    """Obtiene análisis ABC."""
     ventas_service = VentasService(db)
     service = ABCService(ventas_service)
-    return await service.get_analisis_abc(filters, criterio)
+    return await service.get_analisis_abc(filters)
 
-
-@router.get("/abc/cambios")
-async def get_abc_cambios(
-    filters: FilterParams = Depends(get_filter_params),
-    db: AsyncSession = Depends(get_db),
-):
-    """Obtiene productos que cambiaron de categoría vs período anterior."""
-    ventas_service = VentasService(db)
-    service = ABCService(ventas_service)
-    return await service.get_cambios_categoria(filters)
