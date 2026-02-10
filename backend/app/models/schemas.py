@@ -126,12 +126,12 @@ class TopVendedorResponse(BaseModel):
 class MargenProductoResponse(BaseModel):
     """Margen por producto."""
     nombre: str
-    precio: float
-    precio_promedio_compra: float
-    cantidad: int
-    margen: float
-    margen_porcentaje: float
-    total_margen: float
+    precio: Optional[float] = None
+    precio_promedio_compra: Optional[float] = None
+    cantidad: int = 0
+    margen: Optional[float] = None
+    margen_porcentaje: Optional[float] = None
+    total_margen: Optional[float] = None
     vendedor: Optional[str] = None
 
 

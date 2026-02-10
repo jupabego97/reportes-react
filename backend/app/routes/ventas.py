@@ -16,7 +16,6 @@ from app.models.schemas import (
     FiltrosOpciones,
     MargenResponse,
     PrediccionResponse,
-    ABCResponse,
 )
 from app.services.ventas import VentasService
 from app.services.margenes import MargenesService
@@ -166,7 +165,7 @@ async def get_predicciones(
     return await service.get_predicciones(filters)
 
 
-@router.get("/abc", response_model=ABCResponse)
+@router.get("/abc")
 async def get_abc(
     filters: FilterParams = Depends(get_filter_params),
     db: AsyncSession = Depends(get_db),

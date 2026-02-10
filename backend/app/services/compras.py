@@ -13,7 +13,6 @@ from app.models.schemas import (
     SugerenciaCompraResponse,
     ResumenProveedorResponse,
     OrdenCompraResponse,
-    ABCResponse,
 )
 from app.services.ventas import VentasService
 from app.services.abc import ABCService
@@ -53,8 +52,10 @@ class ComprasService:
     ) -> Dict[str, str]:
         """Obtiene un mapa nombre_producto -> clasificación ABC."""
         abc_service = ABCService(self.ventas_service)
-        abc: ABCResponse = await abc_service.get_analisis_abc(filters)
-        return {p.nombre: p.clasificacion for p in abc.productos}
+        abc_result = await abc_service.get_analisis_abc(filters)
+        # abc_result es un dict con "productos" como lista de dicts
+        # Cada producto usa "categoria" (no "clasificacion")
+        return {p["nombre"]: p["categoria"] for p in abc_result.get("productos", [])}
 
     async def get_sugerencias(self, filters: FilterParams) -> List[SugerenciaCompraResponse]:
         """Calcula sugerencias de reposición con inteligencia adicional (ABC, tendencia, ROI)."""
