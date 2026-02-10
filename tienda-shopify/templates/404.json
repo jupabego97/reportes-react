@@ -1,0 +1,32 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-404",
+      "settings": {
+        "title": "¡Ups! Página no encontrada",
+        "message": "La página que buscas no existe o ha sido movida.",
+        "show_popular_links": true
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

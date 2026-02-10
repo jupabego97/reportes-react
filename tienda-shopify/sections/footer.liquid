@@ -1,0 +1,670 @@
+{% comment %}
+  Footer 2026 - Bento Grid Layout
+  Con elementos hand-drawn y newsletter anti-grid
+{% endcomment %}
+
+<footer class="site-footer" data-section-id="{{ section.id }}" data-section-type="footer" itemscope itemtype="https://schema.org/WPFooter">
+  <div class="footer__container">
+    
+    <!-- Bento Grid Layout -->
+    <div class="footer__bento reveal-stagger">
+      
+      <!-- Brand Cell (Large) -->
+      <div class="footer__cell footer__cell--brand">
+        <div class="footer__brand">
+          {%- if section.settings.logo != blank -%}
+            <img 
+              src="{{ section.settings.logo | image_url: width: 150 }}" 
+              alt="{{ shop.name }}"
+              class="footer__logo"
+              loading="lazy"
+            >
+          {%- else -%}
+            <span class="footer__logo-text">{{ shop.name }}</span>
+          {%- endif -%}
+          
+          {%- if section.settings.about_text != blank -%}
+            <p class="footer__about">{{ section.settings.about_text }}</p>
+          {%- endif -%}
+
+          <!-- Social Links with hand-drawn style -->
+          <div class="footer__social">
+            {%- if settings.social_facebook_link != blank -%}
+              <a href="{{ settings.social_facebook_link }}" target="_blank" rel="noopener" aria-label="Facebook" class="footer__social-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
+                </svg>
+              </a>
+            {%- endif -%}
+            {%- if settings.social_instagram_link != blank -%}
+              <a href="{{ settings.social_instagram_link }}" target="_blank" rel="noopener" aria-label="Instagram" class="footer__social-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="2" width="20" height="20" rx="5"/>
+                  <circle cx="12" cy="12" r="4"/>
+                  <circle cx="18" cy="6" r="1.5" fill="currentColor"/>
+                </svg>
+              </a>
+            {%- endif -%}
+            {%- if settings.social_tiktok_link != blank -%}
+              <a href="{{ settings.social_tiktok_link }}" target="_blank" rel="noopener" aria-label="TikTok" class="footer__social-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+                </svg>
+              </a>
+            {%- endif -%}
+            {%- if settings.social_whatsapp_link != blank -%}
+              <a href="{{ settings.social_whatsapp_link }}" target="_blank" rel="noopener" aria-label="WhatsApp" class="footer__social-link footer__social-link--whatsapp">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+              </a>
+            {%- endif -%}
+            {%- if settings.social_youtube_link != blank -%}
+              <a href="{{ settings.social_youtube_link }}" target="_blank" rel="noopener" aria-label="YouTube" class="footer__social-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              </a>
+            {%- endif -%}
+          </div>
+        </div>
+      </div>
+
+      <!-- Newsletter Cell (Anti-grid style) -->
+      {%- if section.settings.show_newsletter -%}
+        <div class="footer__cell footer__cell--newsletter">
+          <div class="footer__newsletter">
+            <span class="footer__newsletter-eyebrow text-handwritten">{{ section.settings.newsletter_eyebrow | default: '✉️ Únete a la comunidad' }}</span>
+            <h3 class="footer__newsletter-title">{{ section.settings.newsletter_title | default: 'Ofertas exclusivas' }}</h3>
+            <p class="footer__newsletter-text">{{ section.settings.newsletter_text }}</p>
+            
+            {% form 'customer', class: 'footer__newsletter-form' %}
+              <div class="footer__newsletter-input-group">
+                <input 
+                  type="email" 
+                  name="contact[email]" 
+                  placeholder="tu@email.com" 
+                  required
+                  class="footer__newsletter-input"
+                  aria-label="Tu email"
+                >
+                <button type="submit" class="footer__newsletter-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                </button>
+              </div>
+              <input type="hidden" name="contact[tags]" value="newsletter">
+            {% endform %}
+
+            <!-- Hand-drawn decoration -->
+            <div class="footer__newsletter-decoration" aria-hidden="true">
+              <svg viewBox="0 0 100 100" fill="none">
+                <path d="M10 50 Q30 20, 50 50 T90 50" stroke="var(--color-handdrawn)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.3"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      {%- endif -%}
+
+      <!-- Menu Cells -->
+      {%- if section.settings.menu_1 != blank -%}
+        <div class="footer__cell footer__cell--menu">
+          <h4 class="footer__menu-title">{{ section.settings.menu_1_title }}</h4>
+          <ul class="footer__menu-list">
+            {%- for link in section.settings.menu_1.links -%}
+              <li><a href="{{ link.url }}" class="footer__menu-link">{{ link.title }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+
+      {%- if section.settings.menu_2 != blank -%}
+        <div class="footer__cell footer__cell--menu">
+          <h4 class="footer__menu-title">{{ section.settings.menu_2_title }}</h4>
+          <ul class="footer__menu-list">
+            {%- for link in section.settings.menu_2.links -%}
+              <li><a href="{{ link.url }}" class="footer__menu-link">{{ link.title }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+
+      <!-- Contact Cell -->
+      <div class="footer__cell footer__cell--contact">
+        <h4 class="footer__menu-title">Contacto</h4>
+        <div class="footer__contact-list">
+          {%- if section.settings.contact_phone != blank -%}
+            {%- assign phone_clean = section.settings.contact_phone | remove: ' ' | remove: '-' | remove: '(' | remove: ')' -%}
+            <a href="tel:{{ phone_clean }}" class="footer__contact-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              <span>{{ section.settings.contact_phone }}</span>
+            </a>
+          {%- endif -%}
+          {%- if section.settings.contact_email != blank -%}
+            <a href="mailto:{{ section.settings.contact_email }}" class="footer__contact-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <span>{{ section.settings.contact_email }}</span>
+            </a>
+          {%- endif -%}
+          {%- if section.settings.contact_hours != blank -%}
+            <div class="footer__contact-item footer__contact-item--hours">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span>{{ section.settings.contact_hours }}</span>
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="footer__bottom">
+      <div class="footer__copyright">
+        <p>&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}. Todos los derechos reservados.</p>
+      </div>
+      
+      <!-- Payment Icons -->
+      {%- if section.settings.show_payment_icons -%}
+        <div class="footer__payment">
+          <span class="footer__payment-label">Pago seguro:</span>
+          <div class="footer__payment-icons">
+            {%- for type in shop.enabled_payment_types -%}
+              {{ type | payment_type_svg_tag: class: 'footer__payment-icon' }}
+            {%- endfor -%}
+          </div>
+        </div>
+      {%- endif -%}
+
+      <!-- Legal Links -->
+      <div class="footer__legal">
+        <a href="/policies/privacy-policy" class="footer__legal-link">Privacidad</a>
+        <a href="/policies/terms-of-service" class="footer__legal-link">Términos</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-16) 0 var(--space-8);
+  }
+
+  .footer__container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+  }
+
+  /* Bento Grid */
+  .footer__bento {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--bento-gap-lg);
+    margin-bottom: var(--space-12);
+  }
+
+  .footer__cell {
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+  }
+
+  /* Brand Cell */
+  .footer__cell--brand {
+    grid-column: span 2;
+    grid-row: span 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-secondary) 100%);
+    color: white;
+  }
+
+  .footer__logo {
+    max-width: 140px;
+    height: auto;
+    margin-bottom: var(--space-4);
+  }
+
+  .footer__logo-text {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    margin-bottom: var(--space-4);
+  }
+
+  .footer__about {
+    font-size: var(--text-base);
+    line-height: 1.6;
+    opacity: 0.9;
+    margin-bottom: var(--space-6);
+  }
+
+  .footer__social {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .footer__social-link {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-lg);
+    color: white;
+    transition: all var(--transition-fast);
+  }
+
+  .footer__social-link:hover {
+    background: white;
+    color: var(--color-accent);
+    transform: translateY(-3px);
+  }
+
+  .footer__social-link--whatsapp:hover {
+    background: #25D366;
+    color: white;
+  }
+
+  /* Newsletter Cell */
+  .footer__cell--newsletter {
+    grid-column: span 2;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .footer__newsletter {
+    position: relative;
+    z-index: 2;
+  }
+
+  .footer__newsletter-eyebrow {
+    display: block;
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-2);
+  }
+
+  .footer__newsletter-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+  }
+
+  .footer__newsletter-text {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-4);
+  }
+
+  .footer__newsletter-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .footer__newsletter-input-group {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .footer__newsletter-input {
+    flex: 1;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-base);
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+  }
+
+  .footer__newsletter-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+
+  .footer__newsletter-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+  }
+
+  .footer__newsletter-btn:hover {
+    background: var(--color-accent-hover);
+    transform: scale(1.05);
+  }
+
+  .footer__newsletter-decoration {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    width: 150px;
+    height: 150px;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  /* Menu Cells */
+  .footer__cell--menu {
+    background: transparent;
+    padding: var(--space-4);
+  }
+
+  .footer__menu-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--space-4);
+  }
+
+  .footer__menu-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .footer__menu-link {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    transition: color var(--transition-fast);
+    display: inline-block;
+    padding: var(--space-1) 0;
+  }
+
+  .footer__menu-link:hover {
+    color: var(--color-accent);
+  }
+
+  /* Contact Cell */
+  .footer__cell--contact {
+    background: transparent;
+    padding: var(--space-4);
+  }
+
+  .footer__contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .footer__contact-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    transition: color var(--transition-fast);
+  }
+
+  .footer__contact-item:hover {
+    color: var(--color-accent);
+  }
+
+  .footer__contact-item svg {
+    color: var(--color-accent);
+    flex-shrink: 0;
+  }
+
+  .footer__contact-item--hours {
+    cursor: default;
+  }
+
+  .footer__contact-item--hours:hover {
+    color: var(--color-text-secondary);
+  }
+
+  /* Bottom Bar */
+  .footer__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .footer__copyright {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .footer__copyright p {
+    margin: 0;
+  }
+
+  .footer__payment {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .footer__payment-label {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+
+  .footer__payment-icons {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .footer__payment-icon {
+    height: 24px;
+    width: auto;
+    opacity: 0.7;
+  }
+
+  .footer__legal {
+    display: flex;
+    gap: var(--space-4);
+  }
+
+  .footer__legal-link {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    transition: color var(--transition-fast);
+  }
+
+  .footer__legal-link:hover {
+    color: var(--color-accent);
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .footer__bento {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .footer__cell--brand {
+      grid-column: span 2;
+      grid-row: span 1;
+    }
+
+    .footer__cell--newsletter {
+      grid-column: span 2;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .site-footer {
+      padding: var(--space-10) 0 var(--space-6);
+    }
+
+    .footer__bento {
+      grid-template-columns: 1fr;
+      gap: var(--bento-gap);
+    }
+
+    .footer__cell--brand,
+    .footer__cell--newsletter {
+      grid-column: span 1;
+    }
+
+    .footer__cell--brand {
+      padding: var(--space-8);
+    }
+
+    .footer__bottom {
+      flex-direction: column;
+      text-align: center;
+      gap: var(--space-4);
+    }
+
+    .footer__payment,
+    .footer__legal {
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .footer__newsletter-input-group {
+      flex-direction: column;
+    }
+
+    .footer__newsletter-btn {
+      width: 100%;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Footer 2026",
+  "class": "section-footer",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Información de la tienda"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "textarea",
+      "id": "about_text",
+      "label": "Texto descriptivo",
+      "default": "Tu tienda de tecnología de confianza. Computadores, tablets, parlantes y accesorios con la mejor calidad."
+    },
+    {
+      "type": "header",
+      "content": "Menús de navegación"
+    },
+    {
+      "type": "text",
+      "id": "menu_1_title",
+      "label": "Título del menú 1",
+      "default": "Categorías"
+    },
+    {
+      "type": "link_list",
+      "id": "menu_1",
+      "label": "Menú 1",
+      "default": "footer"
+    },
+    {
+      "type": "text",
+      "id": "menu_2_title",
+      "label": "Título del menú 2",
+      "default": "Ayuda"
+    },
+    {
+      "type": "link_list",
+      "id": "menu_2",
+      "label": "Menú 2"
+    },
+    {
+      "type": "header",
+      "content": "Contacto"
+    },
+    {
+      "type": "text",
+      "id": "contact_phone",
+      "label": "Teléfono",
+      "default": "+57 323 6826910",
+      "info": "Incluye el código de país (ej: +57 323 6826910)"
+    },
+    {
+      "type": "text",
+      "id": "contact_email",
+      "label": "Email",
+      "default": "contacto@nano.com"
+    },
+    {
+      "type": "text",
+      "id": "contact_hours",
+      "label": "Horario de atención",
+      "default": "Lun - Sáb: 10am - 8pm | Dom: 10am - 7pm"
+    },
+    {
+      "type": "header",
+      "content": "Newsletter"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_newsletter",
+      "label": "Mostrar formulario de newsletter",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "newsletter_eyebrow",
+      "label": "Texto destacado (hand-drawn)",
+      "default": "✉️ Únete a la comunidad"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_title",
+      "label": "Título del newsletter",
+      "default": "Ofertas exclusivas"
+    },
+    {
+      "type": "textarea",
+      "id": "newsletter_text",
+      "label": "Texto del newsletter",
+      "default": "Suscríbete y recibe descuentos exclusivos en tecnología."
+    },
+    {
+      "type": "header",
+      "content": "Opciones adicionales"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "Mostrar iconos de métodos de pago",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

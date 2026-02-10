@@ -1,0 +1,31 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-list-collections",
+      "settings": {
+        "title": "Nuestras colecciones",
+        "description": "Explora todas nuestras categorías de productos tecnológicos"
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

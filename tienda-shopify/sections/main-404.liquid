@@ -1,0 +1,333 @@
+<section class="error-section" data-section-id="{{ section.id }}">
+  <div class="error-container">
+    <div class="error-content">
+      <!-- Ilustración 404 -->
+      <div class="error-illustration">
+        <div class="error-number">
+          <span class="digit">4</span>
+          <span class="digit digit--zero">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="8"/>
+              <circle cx="35" cy="40" r="5" fill="currentColor"/>
+              <circle cx="65" cy="40" r="5" fill="currentColor"/>
+              <path d="M35 65 Q50 55 65 65" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="digit">4</span>
+        </div>
+      </div>
+
+      <!-- Mensaje -->
+      <h1 class="error-title">{{ section.settings.title | default: '¡Ups! Página no encontrada' }}</h1>
+      <p class="error-message">{{ section.settings.message | default: 'La página que buscas no existe o ha sido movida.' }}</p>
+
+      <!-- Acciones -->
+      <div class="error-actions">
+        <a href="{{ routes.root_url }}" class="btn btn--primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          Volver al inicio
+        </a>
+        <a href="{{ routes.all_products_collection_url }}" class="btn btn--secondary">
+          Ver productos
+        </a>
+      </div>
+
+      <!-- Búsqueda -->
+      <div class="error-search">
+        <p>¿Buscabas algo específico?</p>
+        <form action="{{ routes.search_url }}" method="get" class="search-form">
+          <div class="search-input-wrapper">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input 
+              type="search" 
+              name="q" 
+              placeholder="Buscar productos..." 
+              class="search-input"
+              aria-label="Buscar"
+            >
+            <button type="submit" class="search-btn">Buscar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Enlaces populares -->
+      {%- if section.settings.show_popular_links -%}
+        <div class="popular-links">
+          <h3>Enlaces populares</h3>
+          <div class="links-grid">
+            <a href="{{ routes.collections_url }}" class="popular-link">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              <span>Colecciones</span>
+            </a>
+            <a href="{{ routes.all_products_collection_url }}" class="popular-link">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+              <span>Productos</span>
+            </a>
+            <a href="/pages/contacto" class="popular-link">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <span>Contacto</span>
+            </a>
+            <a href="{{ routes.account_url }}" class="popular-link">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>Mi cuenta</span>
+            </a>
+          </div>
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+<style>
+  .error-section {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-3xl) 0;
+  }
+
+  .error-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+    text-align: center;
+  }
+
+  .error-illustration {
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .error-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+  }
+
+  .digit {
+    font-family: var(--font-heading);
+    font-size: clamp(80px, 15vw, 150px);
+    font-weight: 700;
+    background: var(--gradient-tech);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+
+  .digit--zero {
+    width: clamp(80px, 15vw, 150px);
+    height: clamp(80px, 15vw, 150px);
+  }
+
+  .digit--zero svg {
+    width: 100%;
+    height: 100%;
+    color: var(--color-primary);
+  }
+
+  .error-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    margin: 0 0 var(--spacing-md);
+  }
+
+  .error-message {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--spacing-xl);
+  }
+
+  .error-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  /* Búsqueda */
+  .error-search {
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .error-search p {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--spacing-md);
+  }
+
+  .search-form {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--border-radius-full);
+    padding: var(--spacing-xs);
+    transition: all var(--transition-fast);
+  }
+
+  .search-input-wrapper:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
+  }
+
+  .search-input-wrapper svg {
+    margin-left: var(--spacing-md);
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: transparent;
+    border: none;
+    font-size: var(--font-size-md);
+  }
+
+  .search-input:focus {
+    outline: none;
+  }
+
+  .search-btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+    border-radius: var(--border-radius-full);
+    transition: all var(--transition-fast);
+  }
+
+  .search-btn:hover {
+    transform: scale(1.02);
+  }
+
+  /* Enlaces populares */
+  .popular-links h3 {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 var(--spacing-lg);
+  }
+
+  .links-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md);
+  }
+
+  .popular-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-lg);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--border-radius-lg);
+    transition: all var(--transition-fast);
+  }
+
+  .popular-link:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .popular-link svg {
+    color: var(--color-primary);
+  }
+
+  .popular-link span {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+  }
+
+  @media (max-width: 640px) {
+    .links-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .error-actions {
+      flex-direction: column;
+    }
+
+    .error-actions .btn {
+      width: 100%;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Página 404",
+  "tag": "section",
+  "class": "section-404",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Título",
+      "default": "¡Ups! Página no encontrada"
+    },
+    {
+      "type": "textarea",
+      "id": "message",
+      "label": "Mensaje",
+      "default": "La página que buscas no existe o ha sido movida."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_popular_links",
+      "label": "Mostrar enlaces populares",
+      "default": true
+    }
+  ]
+}
+{% endschema %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

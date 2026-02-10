@@ -1,0 +1,249 @@
+<section class="collections-section" data-section-id="{{ section.id }}">
+  <div class="collections-container">
+    <header class="collections-header">
+      <h1 class="collections-title">{{ section.settings.title | default: 'Nuestras colecciones' }}</h1>
+      {%- if section.settings.description != blank -%}
+        <p class="collections-description">{{ section.settings.description }}</p>
+      {%- endif -%}
+    </header>
+
+    <div class="collections-grid">
+      {%- for collection in collections -%}
+        {%- unless collection.handle == 'all' -%}
+          <a href="{{ collection.url }}" class="collection-card">
+            <div class="collection-card-image">
+              {%- if collection.image -%}
+                {{ collection.image | image_url: width: 600 | image_tag:
+                  loading: 'lazy',
+                  class: 'collection-image',
+                  widths: '300, 400, 600',
+                  sizes: '(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw'
+                }}
+              {%- elsif collection.products.first and collection.products.first.featured_image -%}
+                {{ collection.products.first.featured_image | image_url: width: 600 | image_tag:
+                  loading: 'lazy',
+                  class: 'collection-image',
+                  widths: '300, 400, 600',
+                  sizes: '(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw'
+                }}
+              {%- else -%}
+                <div class="collection-placeholder">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </div>
+              {%- endif -%}
+              <div class="collection-overlay"></div>
+            </div>
+            <div class="collection-card-content">
+              <h2 class="collection-name">{{ collection.title }}</h2>
+              <span class="collection-count">{{ collection.products_count }} {{ collection.products_count | pluralize: 'producto', 'productos' }}</span>
+              <span class="collection-link-text">
+                Ver colección
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </span>
+            </div>
+          </a>
+        {%- endunless -%}
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+<style>
+  .collections-section {
+    padding: var(--spacing-2xl) 0 var(--spacing-4xl);
+  }
+
+  .collections-container {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+  }
+
+  .collections-header {
+    text-align: center;
+    margin-bottom: var(--spacing-3xl);
+  }
+
+  .collections-title {
+    font-size: var(--font-size-4xl);
+    font-weight: 700;
+    margin: 0 0 var(--spacing-md);
+  }
+
+  .collections-description {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .collections-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-lg);
+  }
+
+  .collection-card {
+    position: relative;
+    display: block;
+    border-radius: var(--border-radius-xl);
+    overflow: hidden;
+    aspect-ratio: 4/5;
+    background: var(--color-background-alt);
+  }
+
+  .collection-card-image {
+    position: absolute;
+    inset: 0;
+  }
+
+  .collection-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+  }
+
+  .collection-card:hover .collection-image {
+    transform: scale(1.08);
+  }
+
+  .collection-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+  }
+
+  .collection-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.8) 100%);
+    transition: opacity var(--transition-base);
+  }
+
+  .collection-card:hover .collection-overlay {
+    background: linear-gradient(180deg, transparent 20%, rgba(0,0,0,0.85) 100%);
+  }
+
+  .collection-card-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--spacing-xl);
+    color: white;
+    z-index: 1;
+  }
+
+  .collection-name {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    margin: 0 0 var(--spacing-xs);
+    transition: transform var(--transition-fast);
+  }
+
+  .collection-card:hover .collection-name {
+    transform: translateY(-4px);
+  }
+
+  .collection-count {
+    display: block;
+    font-size: var(--font-size-sm);
+    opacity: 0.8;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .collection-link-text {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-primary);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all var(--transition-fast);
+  }
+
+  .collection-card:hover .collection-link-text {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .collection-link-text svg {
+    transition: transform var(--transition-fast);
+  }
+
+  .collection-card:hover .collection-link-text svg {
+    transform: translateX(4px);
+  }
+
+  @media (max-width: 1024px) {
+    .collections-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .collections-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .collection-card {
+      aspect-ratio: 16/9;
+    }
+
+    .collections-title {
+      font-size: var(--font-size-2xl);
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Lista de colecciones",
+  "tag": "section",
+  "class": "section-list-collections",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Título",
+      "default": "Nuestras colecciones"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Descripción",
+      "default": "Explora nuestras categorías de productos"
+    }
+  ]
+}
+{% endschema %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

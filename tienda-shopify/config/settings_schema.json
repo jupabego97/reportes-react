@@ -1,0 +1,462 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "NANO Tech Store 2026",
+    "theme_version": "2.0.0",
+    "theme_author": "NANO",
+    "theme_documentation_url": "https://help.shopify.com/",
+    "theme_support_url": "https://nano.com/soporte"
+  },
+  {
+    "name": "Colores",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Colores principales - Paleta NANO"
+      },
+      {
+        "type": "color",
+        "id": "color_primary",
+        "label": "Color primario (Turquesa NANO)",
+        "default": "#14B8A6",
+        "info": "Color principal para botones y acentos - Turquesa del logo NANO"
+      },
+      {
+        "type": "color",
+        "id": "color_secondary",
+        "label": "Color secundario (Azul NANO)",
+        "default": "#38BDF8",
+        "info": "Color secundario - Azul cielo del fondo del logo"
+      },
+      {
+        "type": "color",
+        "id": "color_accent",
+        "label": "Color de acento (Teal brillante)",
+        "default": "#2DD4BF",
+        "info": "Para elementos especiales - Turquesa brillante"
+      },
+      {
+        "type": "header",
+        "content": "Colores de fondo y texto"
+      },
+      {
+        "type": "color",
+        "id": "color_background",
+        "label": "Color de fondo",
+        "default": "#F0F9FF"
+      },
+      {
+        "type": "color",
+        "id": "color_surface",
+        "label": "Color de superficie (cards)",
+        "default": "#FFFFFF"
+      },
+      {
+        "type": "color",
+        "id": "color_text",
+        "label": "Color del texto principal",
+        "default": "#0F172A"
+      },
+      {
+        "type": "color",
+        "id": "color_text_secondary",
+        "label": "Color del texto secundario",
+        "default": "#475569"
+      },
+      {
+        "type": "header",
+        "content": "Elementos hand-drawn"
+      },
+      {
+        "type": "color",
+        "id": "color_handdrawn",
+        "label": "Color para elementos hand-drawn",
+        "default": "#2DD4BF",
+        "info": "Usado en subrayados y decoraciones - Turquesa NANO"
+      }
+    ]
+  },
+  {
+    "name": "Tipografía",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Fuentes 2026"
+      },
+      {
+        "type": "font_picker",
+        "id": "font_heading",
+        "label": "Fuente para títulos",
+        "default": "space_grotesk_n7",
+        "info": "Recomendado: Space Grotesk, Satoshi, o similar moderna"
+      },
+      {
+        "type": "font_picker",
+        "id": "font_body",
+        "label": "Fuente para el cuerpo",
+        "default": "dm_sans_n4",
+        "info": "Recomendado: DM Sans, General Sans, o similar legible"
+      },
+      {
+        "type": "header",
+        "content": "Tamaños de fuente"
+      },
+      {
+        "type": "range",
+        "id": "font_size_base",
+        "label": "Tamaño de fuente base",
+        "min": 14,
+        "max": 20,
+        "step": 1,
+        "default": 16,
+        "unit": "px"
+      }
+    ]
+  },
+  {
+    "name": "Logo y Favicon",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "logo",
+        "label": "Logo de la tienda"
+      },
+      {
+        "type": "range",
+        "id": "logo_width",
+        "label": "Ancho del logo",
+        "min": 50,
+        "max": 250,
+        "step": 10,
+        "default": 120,
+        "unit": "px"
+      },
+      {
+        "type": "image_picker",
+        "id": "favicon",
+        "label": "Favicon",
+        "info": "Se recomienda una imagen de 32x32 píxeles"
+      }
+    ]
+  },
+  {
+    "name": "Tema Oscuro",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Configuración Dark Mode"
+      },
+      {
+        "type": "select",
+        "id": "theme_mode_default",
+        "label": "Modo de tema por defecto",
+        "options": [
+          {
+            "value": "light",
+            "label": "Light Mode"
+          },
+          {
+            "value": "dark",
+            "label": "Dark Mode"
+          },
+          {
+            "value": "system",
+            "label": "Seguir preferencia del sistema"
+          }
+        ],
+        "default": "light"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_theme_toggle",
+        "label": "Mostrar botón de cambio de tema",
+        "default": true
+      },
+      {
+        "type": "header",
+        "content": "Colores Dark Mode"
+      },
+      {
+        "type": "color",
+        "id": "dark_background",
+        "label": "Fondo oscuro",
+        "default": "#0C1222"
+      },
+      {
+        "type": "color",
+        "id": "dark_surface",
+        "label": "Superficie oscura",
+        "default": "#1E293B"
+      },
+      {
+        "type": "color",
+        "id": "dark_text",
+        "label": "Texto en modo oscuro",
+        "default": "#F1F5F9"
+      }
+    ]
+  },
+  {
+    "name": "Redes sociales",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Cuentas de redes sociales"
+      },
+      {
+        "type": "text",
+        "id": "social_facebook_link",
+        "label": "Facebook",
+        "placeholder": "https://facebook.com/nano"
+      },
+      {
+        "type": "text",
+        "id": "social_instagram_link",
+        "label": "Instagram",
+        "placeholder": "https://instagram.com/nano"
+      },
+      {
+        "type": "text",
+        "id": "social_twitter_link",
+        "label": "Twitter / X",
+        "placeholder": "https://twitter.com/nano"
+      },
+      {
+        "type": "text",
+        "id": "social_tiktok_link",
+        "label": "TikTok",
+        "placeholder": "https://tiktok.com/@nano"
+      },
+      {
+        "type": "text",
+        "id": "social_youtube_link",
+        "label": "YouTube",
+        "placeholder": "https://youtube.com/nano"
+      },
+      {
+        "type": "text",
+        "id": "social_whatsapp_link",
+        "label": "WhatsApp",
+        "placeholder": "https://wa.me/1234567890",
+        "info": "Enlace directo a WhatsApp Business"
+      }
+    ]
+  },
+  {
+    "name": "Carrito",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Configuración del carrito"
+      },
+      {
+        "type": "select",
+        "id": "cart_type",
+        "label": "Tipo de carrito",
+        "options": [
+          {
+            "value": "page",
+            "label": "Página de carrito"
+          },
+          {
+            "value": "drawer",
+            "label": "Carrito deslizante"
+          }
+        ],
+        "default": "page"
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_show_vendor",
+        "label": "Mostrar marca del producto",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_enable_notes",
+        "label": "Permitir notas en el pedido",
+        "default": true
+      }
+    ]
+  },
+  {
+    "name": "Productos",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Tarjetas de producto"
+      },
+      {
+        "type": "checkbox",
+        "id": "product_show_secondary_image",
+        "label": "Mostrar segunda imagen al pasar el mouse",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "product_show_vendor",
+        "label": "Mostrar marca",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "product_show_rating",
+        "label": "Mostrar calificación",
+        "default": true
+      },
+      {
+        "type": "select",
+        "id": "product_image_ratio",
+        "label": "Proporción de imagen",
+        "options": [
+          {
+            "value": "square",
+            "label": "Cuadrada (1:1)"
+          },
+          {
+            "value": "portrait",
+            "label": "Vertical (3:4)"
+          },
+          {
+            "value": "landscape",
+            "label": "Horizontal (4:3)"
+          }
+        ],
+        "default": "square"
+      },
+      {
+        "type": "header",
+        "content": "Badges y etiquetas"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_sale_badge",
+        "label": "Mostrar badge de descuento",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "show_sold_out_badge",
+        "label": "Mostrar badge de agotado",
+        "default": true
+      },
+      {
+        "type": "range",
+        "id": "sale_badge_threshold",
+        "label": "Umbral para badge animado (%)",
+        "min": 10,
+        "max": 50,
+        "step": 5,
+        "default": 30,
+        "info": "Descuentos mayores a este % mostrarán un badge animado (Stopping Power)"
+      }
+    ]
+  },
+  {
+    "name": "Diseño Bento",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Configuración de Bento Grids"
+      },
+      {
+        "type": "range",
+        "id": "bento_gap",
+        "label": "Espaciado entre celdas",
+        "min": 8,
+        "max": 32,
+        "step": 4,
+        "default": 16,
+        "unit": "px"
+      },
+      {
+        "type": "range",
+        "id": "bento_border_radius",
+        "label": "Radio de bordes de celdas",
+        "min": 8,
+        "max": 32,
+        "step": 4,
+        "default": 24,
+        "unit": "px"
+      },
+      {
+        "type": "checkbox",
+        "id": "bento_show_borders",
+        "label": "Mostrar bordes en celdas",
+        "default": true
+      }
+    ]
+  },
+  {
+    "name": "Animaciones",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Configuración de animaciones"
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_reveal_animations",
+        "label": "Habilitar animaciones de entrada",
+        "default": true,
+        "info": "Animaciones al hacer scroll (respeta prefers-reduced-motion)"
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_kinetic_text",
+        "label": "Habilitar tipografía cinética",
+        "default": true,
+        "info": "Animaciones sutiles en textos destacados (Stopping Power)"
+      },
+      {
+        "type": "select",
+        "id": "animation_speed",
+        "label": "Velocidad de animaciones",
+        "options": [
+          {
+            "value": "fast",
+            "label": "Rápida"
+          },
+          {
+            "value": "normal",
+            "label": "Normal"
+          },
+          {
+            "value": "slow",
+            "label": "Lenta"
+          }
+        ],
+        "default": "normal"
+      }
+    ]
+  },
+  {
+    "name": "Low-Carbon",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Optimización de rendimiento"
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_lazy_loading",
+        "label": "Lazy loading de imágenes",
+        "default": true,
+        "info": "Carga imágenes solo cuando son visibles"
+      },
+      {
+        "type": "checkbox",
+        "id": "reduce_animations_on_mobile",
+        "label": "Reducir animaciones en móvil",
+        "default": true,
+        "info": "Mejora el rendimiento en dispositivos móviles"
+      },
+      {
+        "type": "checkbox",
+        "id": "preload_critical_assets",
+        "label": "Precargar assets críticos",
+        "default": true
+      }
+    ]
+  }
+]

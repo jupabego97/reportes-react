@@ -1,0 +1,991 @@
+{% comment %}
+  Header 2026 - Con toggle Dark/Light Mode
+  Diseño simplificado y moderno
+{% endcomment %}
+
+<!-- Announcement Bar / Trust Bar -->
+<div class="announcement-bar">
+  <div class="announcement-bar__container">
+    <div class="announcement-bar__content">
+      <span class="announcement-bar__item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="1" y="3" width="15" height="13"/>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+          <circle cx="5.5" cy="18.5" r="2.5"/>
+          <circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+        Envío GRATIS +$100k
+      </span>
+      <span class="announcement-bar__divider">•</span>
+      <span class="announcement-bar__item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Garantía 6 meses
+      </span>
+      <span class="announcement-bar__divider">•</span>
+      <span class="announcement-bar__item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        30 días devolución
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Main Header -->
+<header class="site-header" data-section-id="{{ section.id }}" data-section-type="header">
+  <div class="header__container">
+    
+    <!-- Logo -->
+    <div class="header__logo">
+      <a href="{{ routes.root_url }}" class="header__logo-link" aria-label="{{ shop.name }} - Ir a inicio">
+        {%- if section.settings.logo != blank -%}
+          <img 
+            src="{{ section.settings.logo | image_url: width: 200 }}" 
+            alt="{{ shop.name }}"
+            width="{{ section.settings.logo_width }}"
+            height="auto"
+            loading="eager"
+            class="header__logo-image"
+          >
+        {%- else -%}
+          <span class="header__logo-text">{{ shop.name }}</span>
+        {%- endif -%}
+      </a>
+    </div>
+
+    <!-- Navigation - 3 botones principales -->
+    <nav class="header__nav" role="navigation" aria-label="Menú principal">
+      <ul class="header__menu" id="main-menu">
+        <li class="header__menu-item">
+          <a href="{{ routes.root_url }}" class="header__menu-link{% if template.name == 'index' %} header__menu-link--active{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            Home
+          </a>
+        </li>
+        <li class="header__menu-item">
+          <a href="{{ routes.all_products_collection_url }}" class="header__menu-link{% if template.name == 'collection' or template.name == 'list-collections' %} header__menu-link--active{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Catálogo
+          </a>
+        </li>
+        <li class="header__menu-item">
+          <a href="https://wa.me/573236826910" target="_blank" rel="noopener" class="header__menu-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Contacto
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Actions -->
+    <div class="header__actions">
+      
+      <!-- Theme Toggle -->
+      <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
+        <svg class="theme-toggle__sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="theme-toggle__moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Search -->
+      <a href="{{ routes.search_url }}" class="header__action" aria-label="Buscar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <span class="header__action-text">Buscar</span>
+      </a>
+
+      <!-- Account with Dropdown -->
+      {%- if shop.customer_accounts_enabled -%}
+        <div class="header__account-wrapper">
+          <button class="header__action header__account-toggle" aria-expanded="false" aria-haspopup="true" aria-label="Mi cuenta">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span class="header__action-text">{%- if customer -%}{{ customer.first_name | default: 'Cuenta' }}{%- else -%}Ingresar{%- endif -%}</span>
+            <svg class="header__account-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          
+          <div class="header__account-dropdown" aria-hidden="true">
+            {%- if customer -%}
+              <!-- Usuario logueado -->
+              <div class="header__account-header">
+                <div class="header__account-avatar">
+                  {{ customer.first_name | slice: 0 | upcase }}{{ customer.last_name | slice: 0 | upcase | default: '' }}
+                </div>
+                <div class="header__account-info">
+                  <span class="header__account-name">{{ customer.first_name }} {{ customer.last_name }}</span>
+                  <span class="header__account-email">{{ customer.email }}</span>
+                </div>
+              </div>
+              
+              <div class="header__account-divider"></div>
+              
+              <nav class="header__account-nav">
+                <a href="{{ routes.account_url }}" class="header__account-link">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Mi Perfil
+                </a>
+                <a href="{{ routes.account_url }}#orders" class="header__account-link">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                  </svg>
+                  Mis Pedidos
+                </a>
+                <a href="{{ routes.account_addresses_url }}" class="header__account-link">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  Direcciones
+                </a>
+              </nav>
+              
+              <div class="header__account-divider"></div>
+              
+              <a href="{{ routes.account_logout_url }}" class="header__account-link header__account-link--logout">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Cerrar sesión
+              </a>
+            {%- else -%}
+              <!-- Usuario no logueado -->
+              <div class="header__account-guest">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <p>Inicia sesión para acceder a tu cuenta</p>
+              </div>
+              
+              <a href="{{ routes.account_login_url }}" class="btn btn--primary btn--full header__account-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                  <polyline points="10 17 15 12 10 7"/>
+                  <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Iniciar sesión
+              </a>
+              
+              <div class="header__account-register">
+                ¿No tienes cuenta? 
+                <a href="{{ routes.account_register_url }}">Regístrate</a>
+              </div>
+            {%- endif -%}
+          </div>
+        </div>
+      {%- endif -%}
+
+      <!-- Cart -->
+      <a href="{{ routes.cart_url }}" class="header__cart" aria-label="Ver carrito">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="21" r="1"/>
+          <circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span class="header__cart-text">Carrito</span>
+        <span class="header__cart-count{% if cart.item_count == 0 %} hidden{% endif %}" data-cart-count>
+          {{ cart.item_count }}
+        </span>
+      </a>
+
+      <!-- Mobile Menu Toggle -->
+      <button class="header__mobile-toggle" id="mobile-toggle" aria-expanded="false" aria-controls="main-menu" aria-label="Abrir menú">
+        <span class="header__hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div class="header__mobile-menu" id="mobile-menu" aria-hidden="true">
+    <div class="header__mobile-menu-content">
+      <ul class="header__mobile-nav">
+        <li>
+          <a href="{{ routes.root_url }}" class="header__mobile-link">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            Home
+          </a>
+        </li>
+        <li>
+          <a href="{{ routes.all_products_collection_url }}" class="header__mobile-link">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Catálogo
+          </a>
+        </li>
+        <li>
+          <a href="https://wa.me/573236826910" target="_blank" rel="noopener" class="header__mobile-link">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Contacto
+          </a>
+        </li>
+      </ul>
+      
+      <div class="header__mobile-actions">
+        <a href="{{ routes.search_url }}" class="btn btn--secondary btn--full">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          Buscar productos
+        </a>
+        <a href="{{ routes.cart_url }}" class="btn btn--secondary btn--full">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="21" r="1"/>
+            <circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          Ver carrito ({{ cart.item_count }})
+        </a>
+        
+        {%- if shop.customer_accounts_enabled -%}
+          <div class="header__mobile-account">
+            {%- if customer -%}
+              <a href="{{ routes.account_url }}" class="btn btn--ghost btn--full">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Mi Cuenta
+              </a>
+            {%- else -%}
+              <a href="{{ routes.account_login_url }}" class="btn btn--primary btn--full">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                  <polyline points="10 17 15 12 10 7"/>
+                  <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Iniciar sesión
+              </a>
+              <a href="{{ routes.account_register_url }}" class="btn btn--ghost btn--full">
+                Crear cuenta
+              </a>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  /* Announcement Bar */
+  .announcement-bar {
+    background: var(--color-accent);
+    color: white;
+    padding: var(--space-2) 0;
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  .announcement-bar__container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+  }
+
+  .announcement-bar__content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  .announcement-bar__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .announcement-bar__divider {
+    opacity: 0.5;
+  }
+
+  /* Header */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    transition: background-color var(--transition-base), border-color var(--transition-base);
+  }
+
+  .header__container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: var(--space-4) var(--container-padding);
+  }
+
+  /* Logo */
+  .header__logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  .header__logo-text {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-accent);
+    letter-spacing: -0.02em;
+  }
+
+  .header__logo-image {
+    height: auto;
+    max-height: 48px;
+  }
+
+  /* Navigation */
+  .header__nav {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  .header__menu {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    list-style: none;
+  }
+
+  .header__menu-item {
+    position: relative;
+  }
+
+  .header__menu-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+    border: 2px solid transparent;
+  }
+
+  .header__menu-link:hover {
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+    border-color: var(--color-accent);
+  }
+  
+  .header__menu-link--active {
+    color: white;
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+  
+  .header__menu-link svg {
+    flex-shrink: 0;
+  }
+
+  .header__menu-chevron {
+    transition: transform var(--transition-fast);
+  }
+
+  .header__menu-item:hover .header__menu-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Dropdown */
+  .header__dropdown {
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    left: 0;
+    min-width: 200px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-2);
+    list-style: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .header__menu-item:hover .header__dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .header__dropdown-link {
+    display: block;
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+  }
+
+  .header__dropdown-link:hover,
+  .header__dropdown-link--active {
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+  }
+
+  /* Actions */
+  .header__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .header__action {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+  }
+
+  .header__action:hover {
+    color: var(--color-text);
+    background: var(--color-bg-alt);
+  }
+
+  .header__action-text {
+    display: none;
+  }
+
+  /* Cart */
+  .header__cart {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: white;
+    background: var(--color-accent);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+  }
+
+  .header__cart:hover {
+    background: var(--color-accent-hover);
+    transform: translateY(-2px);
+  }
+
+  .header__cart-text {
+    display: none;
+  }
+
+  .header__cart-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    background: white;
+    color: var(--color-accent);
+    border-radius: var(--radius-full);
+  }
+
+  .header__cart-count.hidden {
+    display: none;
+  }
+
+  /* Mobile Toggle */
+  .header__mobile-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+  }
+
+  .header__hamburger {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .header__hamburger span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--color-text);
+    border-radius: 1px;
+    transition: all var(--transition-fast);
+  }
+
+  .header__mobile-toggle[aria-expanded="true"] .header__hamburger span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .header__mobile-toggle[aria-expanded="true"] .header__hamburger span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .header__mobile-toggle[aria-expanded="true"] .header__hamburger span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* Mobile Menu */
+  .header__mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-surface);
+    z-index: var(--z-modal);
+    transform: translateX(-100%);
+    transition: transform var(--transition-base);
+    overflow-y: auto;
+    padding-top: 80px;
+  }
+
+  .header__mobile-menu[aria-hidden="false"] {
+    transform: translateX(0);
+  }
+
+  .header__mobile-menu-content {
+    padding: var(--space-6) var(--container-padding);
+  }
+
+  .header__mobile-nav {
+    list-style: none;
+    margin-bottom: var(--space-8);
+  }
+
+  .header__mobile-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-4);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-2);
+    background: var(--color-bg-alt);
+    transition: all var(--transition-fast);
+  }
+  
+  .header__mobile-link:hover {
+    background: var(--color-accent);
+    color: white;
+  }
+  
+  .header__mobile-link svg {
+    flex-shrink: 0;
+  }
+
+  .header__mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .header__mobile-account {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Account Dropdown */
+  .header__account-wrapper {
+    position: relative;
+  }
+
+  .header__account-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .header__account-toggle:hover {
+    color: var(--color-text);
+    background: var(--color-bg-alt);
+  }
+
+  .header__account-arrow {
+    transition: transform var(--transition-fast);
+  }
+
+  .header__account-wrapper:hover .header__account-arrow,
+  .header__account-toggle[aria-expanded="true"] .header__account-arrow {
+    transform: rotate(180deg);
+  }
+
+  .header__account-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 280px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+    box-shadow: var(--shadow-xl);
+    z-index: 9999;
+  }
+
+  /* Área de conexión invisible para mantener hover */
+  .header__account-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 0;
+    right: 0;
+    height: 15px;
+  }
+
+  .header__account-dropdown.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* Asegurar que los enlaces del dropdown sean clickeables */
+  .header__account-dropdown * {
+    pointer-events: auto;
+  }
+  
+  .header__account-dropdown a {
+    display: flex;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  
+  .header__account-dropdown a:hover {
+    opacity: 0.9;
+  }
+
+  .header__account-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .header__account-avatar {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-accent);
+    color: white;
+    font-size: var(--text-lg);
+    font-weight: 700;
+    border-radius: var(--radius-full);
+  }
+
+  .header__account-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header__account-name {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .header__account-email {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+
+  .header__account-divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: var(--space-3) 0;
+  }
+
+  .header__account-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .header__account-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+  }
+
+  .header__account-link:hover {
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+  }
+
+  .header__account-link--logout {
+    color: var(--color-error);
+  }
+
+  .header__account-link--logout:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+  }
+
+  .header__account-guest {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--space-4) 0;
+    color: var(--color-text-muted);
+  }
+
+  .header__account-guest svg {
+    margin-bottom: var(--space-3);
+    color: var(--color-text-muted);
+  }
+
+  .header__account-guest p {
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-4);
+  }
+
+  .header__account-btn {
+    margin-bottom: var(--space-3);
+  }
+
+  .header__account-register {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+
+  .header__account-register a {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  .header__account-register a:hover {
+    text-decoration: underline;
+  }
+
+  /* Responsive */
+  @media (min-width: 1024px) {
+    .header__action-text {
+      display: inline;
+    }
+
+    .header__cart-text {
+      display: inline;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .header__nav {
+      display: none;
+    }
+
+    .header__mobile-toggle {
+      display: flex;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .announcement-bar__content {
+      gap: var(--space-2);
+    }
+
+    .announcement-bar__item {
+      font-size: var(--text-xs);
+    }
+
+    .announcement-bar__divider {
+      display: none;
+    }
+
+    .header__container {
+      padding: var(--space-3) var(--container-padding);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .announcement-bar__item:not(:first-child) {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Mobile menu toggle
+  const mobileToggle = document.getElementById('mobile-toggle');
+  const mobileMenu = document.getElementById('mobile-menu');
+  
+  if (mobileToggle && mobileMenu) {
+    mobileToggle.addEventListener('click', function() {
+      const isOpen = this.getAttribute('aria-expanded') === 'true';
+      this.setAttribute('aria-expanded', !isOpen);
+      mobileMenu.setAttribute('aria-hidden', isOpen);
+      document.body.style.overflow = isOpen ? '' : 'hidden';
+    });
+
+    // Close on link click
+    mobileMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', function() {
+        mobileToggle.setAttribute('aria-expanded', 'false');
+        mobileMenu.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+      });
+    });
+  }
+
+  // Account dropdown - Simple hover/click toggle
+  const accountWrapper = document.querySelector('.header__account-wrapper');
+  
+  if (accountWrapper) {
+    const toggle = accountWrapper.querySelector('.header__account-toggle');
+    const dropdown = accountWrapper.querySelector('.header__account-dropdown');
+    
+    if (toggle && dropdown) {
+      // Solo toggle con click en el botón
+      toggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('is-open');
+      });
+      
+      // Cerrar al hacer click fuera
+      document.addEventListener('click', function(e) {
+        if (!accountWrapper.contains(e.target)) {
+          dropdown.classList.remove('is-open');
+        }
+      });
+      
+      // Cerrar con Escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          dropdown.classList.remove('is-open');
+        }
+      });
+    }
+  }
+
+  // Theme toggle is handled in theme.js
+});
+</script>
+
+{% schema %}
+{
+  "name": "Header 2026",
+  "class": "section-header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 50,
+      "max": 200,
+      "step": 10,
+      "default": 120,
+      "unit": "px",
+      "label": "Ancho del logo"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "default": "main-menu",
+      "label": "Menú de navegación"
+    }
+  ]
+}
+{% endschema %}

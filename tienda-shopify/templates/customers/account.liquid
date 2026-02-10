@@ -1,0 +1,430 @@
+{% comment %}
+  Customer Account Page - NANO Tech Store 2026
+{% endcomment %}
+
+<section class="account-section">
+  <div class="account-container">
+    <!-- Header -->
+    <header class="account-header">
+      <div class="account-welcome">
+        <h1 class="account-title">Hola, {{ customer.first_name | default: 'Cliente' }}</h1>
+        <p class="account-subtitle">Bienvenido a tu cuenta NANO</p>
+      </div>
+      <a href="{{ routes.account_logout_url }}" class="btn btn--secondary btn--sm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Cerrar sesión
+      </a>
+    </header>
+
+    <div class="account-content">
+      <!-- Sidebar / Navigation -->
+      <aside class="account-sidebar">
+        <nav class="account-nav">
+          <a href="{{ routes.account_url }}" class="account-nav-item account-nav-item--active">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Mi cuenta
+          </a>
+          <a href="{{ routes.account_url }}#orders" class="account-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            Mis pedidos
+          </a>
+          <a href="{{ routes.account_addresses_url }}" class="account-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            Direcciones
+          </a>
+        </nav>
+
+        <!-- Account Info Card -->
+        <div class="account-info-card">
+          <h3 class="info-card-title">Información de cuenta</h3>
+          <div class="info-card-content">
+            <p><strong>Email:</strong> {{ customer.email }}</p>
+            {%- if customer.default_address -%}
+              <p><strong>Dirección principal:</strong><br>
+                {{ customer.default_address.address1 }}<br>
+                {{ customer.default_address.city }}, {{ customer.default_address.province }}<br>
+                {{ customer.default_address.country }}
+              </p>
+            {%- endif -%}
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="account-main">
+        <!-- Orders Section -->
+        <section class="account-section-block" id="orders">
+          <header class="section-block-header">
+            <h2 class="section-block-title">Historial de Pedidos</h2>
+            <span class="orders-count">{{ customer.orders_count }} pedido{{ customer.orders_count | pluralize: '', 's' }}</span>
+          </header>
+
+          {%- if customer.orders.size > 0 -%}
+            <div class="orders-list">
+              {%- for order in customer.orders -%}
+                <div class="order-card">
+                  <div class="order-header">
+                    <div class="order-info">
+                      <span class="order-number">Pedido {{ order.name }}</span>
+                      <span class="order-date">{{ order.created_at | date: "%d %b %Y" }}</span>
+                    </div>
+                    <div class="order-status">
+                      <span class="status-badge status-badge--{{ order.fulfillment_status | default: 'unfulfilled' }}">
+                        {%- case order.fulfillment_status -%}
+                          {%- when 'fulfilled' -%}
+                            Entregado
+                          {%- when 'partial' -%}
+                            Parcial
+                          {%- when 'restocked' -%}
+                            Reabastecido
+                          {%- else -%}
+                            En proceso
+                        {%- endcase -%}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="order-items">
+                    {%- for line_item in order.line_items limit: 3 -%}
+                      <div class="order-item">
+                        <span class="item-name">{{ line_item.title }}</span>
+                        <span class="item-qty">x{{ line_item.quantity }}</span>
+                      </div>
+                    {%- endfor -%}
+                    {%- if order.line_items.size > 3 -%}
+                      <span class="more-items">+{{ order.line_items.size | minus: 3 }} más</span>
+                    {%- endif -%}
+                  </div>
+
+                  <div class="order-footer">
+                    <span class="order-total">Total: {{ order.total_price | money }}</span>
+                    <a href="{{ order.customer_url }}" class="btn btn--sm btn--secondary">
+                      Ver detalles
+                    </a>
+                  </div>
+                </div>
+              {%- endfor -%}
+            </div>
+          {%- else -%}
+            <div class="empty-state">
+              <div class="empty-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                  <line x1="3" y1="6" x2="21" y2="6"/>
+                  <path d="M16 10a4 4 0 0 1-8 0"/>
+                </svg>
+              </div>
+              <h3>No tienes pedidos aún</h3>
+              <p>Cuando realices tu primera compra, aparecerá aquí.</p>
+              <a href="{{ routes.all_products_collection_url }}" class="btn btn--primary">
+                Explorar productos
+              </a>
+            </div>
+          {%- endif -%}
+        </section>
+      </main>
+    </div>
+  </div>
+</section>
+
+<style>
+  .account-section {
+    padding: var(--space-10) 0 var(--space-16);
+    background: var(--color-bg);
+    min-height: 80vh;
+  }
+
+  .account-container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+  }
+
+  .account-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .account-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .account-subtitle {
+    font-size: var(--text-base);
+    color: var(--color-text-secondary);
+    margin: var(--space-1) 0 0;
+  }
+
+  .account-content {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  /* Sidebar */
+  .account-sidebar {
+    position: sticky;
+    top: 100px;
+  }
+
+  .account-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+
+  .account-nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    transition: all var(--transition-fast);
+  }
+
+  .account-nav-item:hover {
+    background: var(--color-bg-alt);
+    color: var(--color-text);
+  }
+
+  .account-nav-item--active {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+  }
+
+  .account-info-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+  }
+
+  .info-card-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .info-card-content {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+
+  .info-card-content p {
+    margin: 0 0 var(--space-3);
+  }
+
+  .info-card-content p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Main Content */
+  .account-section-block {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-6);
+  }
+
+  .section-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .section-block-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .orders-count {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* Orders */
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .order-card {
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    transition: all var(--transition-fast);
+  }
+
+  .order-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  .order-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+  }
+
+  .order-number {
+    font-weight: 600;
+    color: var(--color-text);
+    display: block;
+  }
+
+  .order-date {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+  }
+
+  .status-badge--fulfilled {
+    background: var(--color-success-light);
+    color: var(--color-success);
+  }
+
+  .status-badge--unfulfilled,
+  .status-badge-- {
+    background: var(--color-warning-light);
+    color: var(--color-warning);
+  }
+
+  .status-badge--partial {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+  }
+
+  .order-items {
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .order-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-1);
+  }
+
+  .more-items {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  .order-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .order-total {
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: var(--space-10);
+  }
+
+  .empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--space-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+  }
+
+  .empty-state h3 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2);
+  }
+
+  .empty-state p {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--space-6);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .account-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-4);
+    }
+
+    .account-content {
+      grid-template-columns: 1fr;
+    }
+
+    .account-sidebar {
+      position: static;
+    }
+
+    .account-nav {
+      flex-direction: row;
+      overflow-x: auto;
+      padding-bottom: var(--space-2);
+    }
+
+    .account-nav-item {
+      white-space: nowrap;
+    }
+  }
+</style>

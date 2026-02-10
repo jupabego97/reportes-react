@@ -1,0 +1,556 @@
+{% comment %}
+  Customer Addresses Page - NANO Tech Store 2026
+{% endcomment %}
+
+<section class="addresses-section">
+  <div class="addresses-container">
+    <!-- Header -->
+    <header class="addresses-header">
+      <div class="header-content">
+        <a href="{{ routes.account_url }}" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Volver a mi cuenta
+        </a>
+        <h1 class="addresses-title">Mis Direcciones</h1>
+        <p class="addresses-subtitle">Administra tus direcciones de envío</p>
+      </div>
+      <button type="button" class="btn btn--primary" data-action="add-address">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Agregar dirección
+      </button>
+    </header>
+
+    <!-- Addresses Grid -->
+    <div class="addresses-grid">
+      {%- for address in customer.addresses -%}
+        <div class="address-card{% if address == customer.default_address %} address-card--default{% endif %}">
+          {%- if address == customer.default_address -%}
+            <span class="default-badge">Principal</span>
+          {%- endif -%}
+          
+          <div class="address-content">
+            <p class="address-name">{{ address.first_name }} {{ address.last_name }}</p>
+            {%- if address.company != blank -%}
+              <p class="address-company">{{ address.company }}</p>
+            {%- endif -%}
+            <p class="address-line">{{ address.address1 }}</p>
+            {%- if address.address2 != blank -%}
+              <p class="address-line">{{ address.address2 }}</p>
+            {%- endif -%}
+            <p class="address-line">{{ address.city }}, {{ address.province }}</p>
+            <p class="address-line">{{ address.zip }}</p>
+            <p class="address-country">{{ address.country }}</p>
+            {%- if address.phone != blank -%}
+              <p class="address-phone">{{ address.phone }}</p>
+            {%- endif -%}
+          </div>
+
+          <div class="address-actions">
+            <button type="button" class="btn btn--sm btn--secondary" data-action="edit-address" data-address-id="{{ address.id }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              Editar
+            </button>
+            <button type="button" class="btn btn--sm btn--ghost" data-action="delete-address" data-address-id="{{ address.id }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              Eliminar
+            </button>
+          </div>
+        </div>
+      {%- else -%}
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <h3>No tienes direcciones guardadas</h3>
+          <p>Agrega una dirección para agilizar tus compras.</p>
+          <button type="button" class="btn btn--primary" data-action="add-address">
+            Agregar dirección
+          </button>
+        </div>
+      {%- endfor -%}
+    </div>
+
+    <!-- Add/Edit Address Modal -->
+    <div class="address-modal" id="address-modal" style="display: none;">
+      <div class="modal-overlay" data-action="close-modal"></div>
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2 class="modal-title" id="modal-title">Nueva Dirección</h2>
+          <button type="button" class="modal-close" data-action="close-modal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </header>
+
+        {%- form 'customer_address', customer.new_address, class: 'address-form', id: 'address-form' -%}
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="AddressFirstName" class="form-label">Nombre</label>
+              <input type="text" name="address[first_name]" id="AddressFirstName" class="form-input" autocomplete="given-name" value="{{ form.first_name }}" required>
+            </div>
+            <div class="form-group">
+              <label for="AddressLastName" class="form-label">Apellido</label>
+              <input type="text" name="address[last_name]" id="AddressLastName" class="form-input" autocomplete="family-name" value="{{ form.last_name }}" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="AddressCompany" class="form-label">Empresa (opcional)</label>
+            <input type="text" name="address[company]" id="AddressCompany" class="form-input" autocomplete="organization" value="{{ form.company }}">
+          </div>
+
+          <div class="form-group">
+            <label for="AddressAddress1" class="form-label">Dirección</label>
+            <input type="text" name="address[address1]" id="AddressAddress1" class="form-input" autocomplete="address-line1" value="{{ form.address1 }}" required>
+          </div>
+
+          <div class="form-group">
+            <label for="AddressAddress2" class="form-label">Apartamento, suite, etc. (opcional)</label>
+            <input type="text" name="address[address2]" id="AddressAddress2" class="form-input" autocomplete="address-line2" value="{{ form.address2 }}">
+          </div>
+
+          <div class="form-grid form-grid--3">
+            <div class="form-group">
+              <label for="AddressCity" class="form-label">Ciudad</label>
+              <input type="text" name="address[city]" id="AddressCity" class="form-input" autocomplete="address-level2" value="{{ form.city }}" required>
+            </div>
+            <div class="form-group">
+              <label for="AddressCountry" class="form-label">País</label>
+              <select name="address[country]" id="AddressCountry" class="form-input" data-default="{{ form.country }}" autocomplete="country">
+                {{ all_country_option_tags }}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="AddressProvince" class="form-label">Departamento/Estado</label>
+              <select name="address[province]" id="AddressProvince" class="form-input" data-default="{{ form.province }}" autocomplete="address-level1">
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="AddressZip" class="form-label">Código postal</label>
+              <input type="text" name="address[zip]" id="AddressZip" class="form-input" autocomplete="postal-code" value="{{ form.zip }}">
+            </div>
+            <div class="form-group">
+              <label for="AddressPhone" class="form-label">Teléfono</label>
+              <input type="tel" name="address[phone]" id="AddressPhone" class="form-input" autocomplete="tel" value="{{ form.phone }}">
+            </div>
+          </div>
+
+          <div class="form-group form-group--checkbox">
+            <label class="checkbox-label">
+              <input type="checkbox" name="address[default]" id="AddressDefault" value="1">
+              <span class="checkbox-text">Establecer como dirección principal</span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn--secondary" data-action="close-modal">Cancelar</button>
+            <button type="submit" class="btn btn--primary">Guardar dirección</button>
+          </div>
+        {%- endform -%}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .addresses-section {
+    padding: var(--space-10) 0 var(--space-16);
+    background: var(--color-bg);
+    min-height: 80vh;
+  }
+
+  .addresses-container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+  }
+
+  .addresses-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-2);
+    transition: color var(--transition-fast);
+  }
+
+  .back-link:hover {
+    color: var(--color-accent);
+  }
+
+  .addresses-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .addresses-subtitle {
+    font-size: var(--text-base);
+    color: var(--color-text-secondary);
+    margin: var(--space-1) 0 0;
+  }
+
+  /* Grid */
+  .addresses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-6);
+  }
+
+  /* Address Card */
+  .address-card {
+    position: relative;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    transition: all var(--transition-fast);
+  }
+
+  .address-card:hover {
+    border-color: var(--color-border-accent);
+    box-shadow: var(--shadow-md);
+  }
+
+  .address-card--default {
+    border-color: var(--color-accent);
+  }
+
+  .default-badge {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-accent);
+    color: white;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+  }
+
+  .address-content {
+    margin-bottom: var(--space-5);
+  }
+
+  .address-name {
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2);
+  }
+
+  .address-company {
+    font-size: var(--text-sm);
+    color: var(--color-accent);
+    margin: 0 0 var(--space-2);
+  }
+
+  .address-line,
+  .address-country,
+  .address-phone {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .address-phone {
+    margin-top: var(--space-2);
+    color: var(--color-text);
+  }
+
+  .address-actions {
+    display: flex;
+    gap: var(--space-2);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Empty State */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: var(--space-16);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+  }
+
+  .empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--space-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+  }
+
+  .empty-state h3 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2);
+  }
+
+  .empty-state p {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--space-6);
+  }
+
+  /* Modal */
+  .address-modal {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+  }
+
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--color-surface);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-5) var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    background: var(--color-surface);
+    z-index: 1;
+  }
+
+  .modal-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .modal-close {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+    transition: all var(--transition-fast);
+  }
+
+  .modal-close:hover {
+    background: var(--color-error-light);
+    color: var(--color-error);
+  }
+
+  .address-form {
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  .form-grid--3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .form-label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .form-input {
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg-alt);
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg);
+    font-size: var(--text-base);
+    font-family: var(--font-body);
+    color: var(--color-text);
+    transition: all var(--transition-fast);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: var(--color-surface);
+    box-shadow: 0 0 0 4px var(--color-accent-glow);
+  }
+
+  .form-group--checkbox {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    cursor: pointer;
+  }
+
+  .checkbox-label input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--color-accent);
+  }
+
+  .checkbox-text {
+    font-size: var(--text-sm);
+    color: var(--color-text);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .addresses-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-4);
+    }
+
+    .form-grid,
+    .form-grid--3 {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('address-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const form = document.getElementById('address-form');
+
+    // Open modal for new address
+    document.querySelectorAll('[data-action="add-address"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modalTitle.textContent = 'Nueva Dirección';
+        form.reset();
+        form.action = '{{ routes.account_addresses_url }}';
+        modal.style.display = 'flex';
+      });
+    });
+
+    // Close modal
+    document.querySelectorAll('[data-action="close-modal"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+    });
+
+    // Close on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'flex') {
+        modal.style.display = 'none';
+      }
+    });
+
+    // Edit address
+    document.querySelectorAll('[data-action="edit-address"]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const addressId = this.dataset.addressId;
+        modalTitle.textContent = 'Editar Dirección';
+        form.action = '{{ routes.account_addresses_url }}/' + addressId;
+        // In a real implementation, you'd populate the form with existing data
+        modal.style.display = 'flex';
+      });
+    });
+
+    // Delete address
+    document.querySelectorAll('[data-action="delete-address"]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        if (confirm('¿Estás seguro de que deseas eliminar esta dirección?')) {
+          const addressId = this.dataset.addressId;
+          Shopify.postLink('{{ routes.account_addresses_url }}/' + addressId, {
+            parameters: { _method: 'delete' }
+          });
+        }
+      });
+    });
+
+    // Country/Province selector
+    const countrySelect = document.getElementById('AddressCountry');
+    const provinceSelect = document.getElementById('AddressProvince');
+
+    if (countrySelect && provinceSelect) {
+      new Shopify.CountryProvinceSelector('AddressCountry', 'AddressProvince', {
+        hideElement: 'AddressProvinceContainer'
+      });
+    }
+  });
+</script>

@@ -1,0 +1,449 @@
+{% comment %}
+  Benefits Section 2026
+  Bento Grid asimétrico con tipografía cinética
+{% endcomment %}
+
+<section class="benefits-section" data-section-id="{{ section.id }}">
+  <div class="benefits__container">
+    
+    <!-- Section Header -->
+    {%- if section.settings.title != blank -%}
+      <header class="section-header reveal">
+        <span class="section-eyebrow text-handwritten">{{ section.settings.eyebrow | default: '¿Por qué elegirnos?' }}</span>
+        <h2 class="section-title">{{ section.settings.title }}</h2>
+        {%- if section.settings.subtitle != blank -%}
+          <p class="section-subtitle">{{ section.settings.subtitle }}</p>
+        {%- endif -%}
+      </header>
+    {%- endif -%}
+
+    <!-- Bento Grid - Asimétrico -->
+    <div class="benefits__bento reveal-stagger">
+      
+      <!-- Envío Gratis - Large Cell -->
+      <div class="benefits__cell benefits__cell--shipping bento-cell bento-cell--2x1">
+        <div class="benefits__cell-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="1" y="3" width="15" height="13"/>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+            <circle cx="5.5" cy="18.5" r="2.5"/>
+            <circle cx="18.5" cy="18.5" r="2.5"/>
+          </svg>
+        </div>
+        <div class="benefits__cell-content">
+          <h3 class="benefits__cell-title kinetic-text">Envío Gratis</h3>
+          <p class="benefits__cell-text">En pedidos mayores a $100.000. Recibe tu pedido en la puerta de tu casa sin costo adicional.</p>
+        </div>
+        <div class="benefits__cell-badge badge badge--handdrawn">¡Gratis!</div>
+        
+        <!-- Decorative hand-drawn element -->
+        <div class="benefits__cell-decoration" aria-hidden="true">
+          <svg viewBox="0 0 100 50" fill="none">
+            <path d="M5 25 Q25 5, 50 25 T95 25" stroke="var(--color-handdrawn)" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="5 5"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Garantía - Regular Cell -->
+      <div class="benefits__cell benefits__cell--warranty bento-cell">
+        <div class="benefits__cell-icon benefits__cell-icon--accent">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <polyline points="9 12 11 14 15 10"/>
+          </svg>
+        </div>
+        <h3 class="benefits__cell-title">Garantía de al menos <span class="text-handwritten">6 Meses</span></h3>
+        <p class="benefits__cell-text">Garantía de al menos 6 meses en todos nuestros productos.</p>
+      </div>
+
+      <!-- Pago Seguro - Regular Cell -->
+      <div class="benefits__cell benefits__cell--payment bento-cell">
+        <div class="benefits__cell-icon benefits__cell-icon--secondary">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+            <line x1="1" y1="10" x2="23" y2="10"/>
+          </svg>
+        </div>
+        <h3 class="benefits__cell-title">Pago Seguro</h3>
+        <p class="benefits__cell-text">Acepta todas las tarjetas y medios de pago. Tu información está protegida.</p>
+      </div>
+
+      <!-- Soporte - Tall Cell -->
+      <div class="benefits__cell benefits__cell--support bento-cell bento-cell--1x2">
+        <div class="benefits__cell-icon benefits__cell-icon--large">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h3 class="benefits__cell-title">
+          Soporte 
+          <span class="kinetic-text--wave">
+            <span>H</span><span>u</span><span>m</span><span>a</span><span>n</span><span>o</span>
+          </span>
+        </h3>
+        <p class="benefits__cell-text">¿Tienes dudas? Escríbenos por WhatsApp. Te atendemos Lun - Sáb: 10am - 8pm | Dom: 10am - 7pm.</p>
+        
+        <a href="https://wa.me/573236826910" target="_blank" rel="noopener" class="benefits__cell-cta">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          Contacta ahora
+        </a>
+      </div>
+
+      <!-- Devoluciones - Wide Cell -->
+      <div class="benefits__cell benefits__cell--returns bento-cell bento-cell--2x1">
+        <div class="benefits__cell-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </div>
+        <div class="benefits__cell-content">
+          <h3 class="benefits__cell-title">
+            <span class="handdrawn-underline">30 Días</span> para Devoluciones
+          </h3>
+          <p class="benefits__cell-text">Si no estás satisfecho, devuelve tu producto sin complicaciones. Tu satisfacción es nuestra prioridad.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Trust Stats (Stopping Power) -->
+    {%- if section.settings.show_stats -%}
+      <div class="benefits__stats reveal">
+        <div class="benefits__stat">
+          <span class="benefits__stat-number kinetic-text">+5,000</span>
+          <span class="benefits__stat-label">Clientes felices</span>
+        </div>
+        <div class="benefits__stat-divider"></div>
+        <div class="benefits__stat">
+          <span class="benefits__stat-number kinetic-text">4.9/5</span>
+          <span class="benefits__stat-label">Calificación promedio</span>
+        </div>
+        <div class="benefits__stat-divider"></div>
+        <div class="benefits__stat">
+          <span class="benefits__stat-number kinetic-text">24h</span>
+          <span class="benefits__stat-label">Tiempo de respuesta</span>
+        </div>
+      </div>
+    {%- endif -%}
+  </div>
+</section>
+
+<style>
+  .benefits-section {
+    padding: var(--space-16) 0;
+    background: var(--color-bg-alt);
+  }
+
+  .benefits__container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+  }
+
+  /* Bento Grid - Asymmetric */
+  .benefits__bento {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: auto auto;
+    gap: var(--bento-gap-lg);
+  }
+
+  /* Cells */
+  .benefits__cell {
+    position: relative;
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all var(--transition-base);
+  }
+
+  .benefits__cell:hover {
+    border-color: var(--color-border-accent);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Cell Icon */
+  .benefits__cell-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-accent-light);
+    border-radius: var(--radius-lg);
+    color: var(--color-accent);
+    margin-bottom: var(--space-4);
+    flex-shrink: 0;
+  }
+
+  .benefits__cell-icon--accent {
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-secondary) 100%);
+    color: white;
+  }
+
+  .benefits__cell-icon--secondary {
+    background: var(--color-secondary-light);
+    color: var(--color-secondary);
+  }
+
+  .benefits__cell-icon--large {
+    width: 72px;
+    height: 72px;
+  }
+
+  /* Cell Content */
+  .benefits__cell-content {
+    flex: 1;
+  }
+
+  .benefits__cell-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+    line-height: 1.3;
+  }
+
+  .benefits__cell-text {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .benefits__cell-badge {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+  }
+
+  .benefits__cell-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+  }
+
+  .benefits__cell-cta:hover {
+    background: var(--color-accent);
+    color: white;
+  }
+
+  .benefits__cell-decoration {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  /* Specific Cell Styles */
+  .benefits__cell--shipping {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .benefits__cell--shipping .benefits__cell-icon {
+    margin-bottom: 0;
+  }
+
+  .benefits__cell--support {
+    background: linear-gradient(135deg, var(--color-accent) 0%, #8B5CF6 100%);
+    color: white;
+    border: none;
+  }
+
+  .benefits__cell--support:hover {
+    border: none;
+  }
+
+  .benefits__cell--support .benefits__cell-icon {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  .benefits__cell--support .benefits__cell-title {
+    color: white;
+  }
+
+  .benefits__cell--support .benefits__cell-text {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .benefits__cell--support .benefits__cell-cta {
+    background: white;
+    color: var(--color-accent);
+  }
+
+  .benefits__cell--support .benefits__cell-cta:hover {
+    background: var(--color-bg);
+  }
+
+  .benefits__cell--returns {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .benefits__cell--returns .benefits__cell-icon {
+    margin-bottom: 0;
+  }
+
+  /* Stats */
+  .benefits__stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-10);
+    margin-top: var(--space-12);
+    padding: var(--space-8);
+    background: var(--color-surface);
+    border-radius: var(--radius-2xl);
+    border: 1px solid var(--color-border);
+  }
+
+  .benefits__stat {
+    text-align: center;
+  }
+
+  .benefits__stat-number {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: var(--text-4xl);
+    font-weight: 700;
+    color: var(--color-accent);
+    line-height: 1;
+    margin-bottom: var(--space-2);
+  }
+
+  .benefits__stat-label {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .benefits__stat-divider {
+    width: 1px;
+    height: 60px;
+    background: var(--color-border);
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .benefits__bento {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .benefits__cell--shipping,
+    .benefits__cell--returns {
+      grid-column: span 2;
+    }
+
+    .benefits__cell--support {
+      grid-column: span 1;
+      grid-row: span 1;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .benefits-section {
+      padding: var(--space-10) 0;
+    }
+
+    .benefits__bento {
+      grid-template-columns: 1fr;
+      gap: var(--bento-gap);
+    }
+
+    .benefits__cell--shipping,
+    .benefits__cell--returns,
+    .benefits__cell--support {
+      grid-column: span 1;
+      grid-row: span 1;
+    }
+
+    .benefits__cell--shipping,
+    .benefits__cell--returns {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .benefits__cell--shipping .benefits__cell-icon,
+    .benefits__cell--returns .benefits__cell-icon {
+      margin-bottom: var(--space-4);
+    }
+
+    .benefits__stats {
+      flex-direction: column;
+      gap: var(--space-6);
+      padding: var(--space-6);
+    }
+
+    .benefits__stat-divider {
+      width: 60px;
+      height: 1px;
+    }
+
+    .benefits__stat-number {
+      font-size: var(--text-3xl);
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Beneficios 2026",
+  "tag": "section",
+  "class": "section-benefits",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Texto destacado (hand-drawn)",
+      "default": "¿Por qué elegirnos?"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Título",
+      "default": "¿Por qué comprar con nosotros?"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Subtítulo",
+      "default": "Tu satisfacción es nuestra prioridad"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_stats",
+      "label": "Mostrar estadísticas",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Beneficios 2026",
+      "category": "Contenido"
+    }
+  ]
+}
+{% endschema %}

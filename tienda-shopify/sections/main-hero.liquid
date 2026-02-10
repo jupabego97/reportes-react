@@ -1,0 +1,649 @@
+{% comment %}
+  Hero Section - Bento Grid Layout 2026
+  Implementa Patrón Z para conversión óptima
+{% endcomment %}
+
+<section class="hero-section" data-section-id="{{ section.id }}" data-section-type="hero">
+  <div class="hero-container">
+    <div class="hero-bento reveal-stagger">
+      
+      <!-- Celda Principal (2x2) - Mensaje Hero + CTA -->
+      <div class="hero-bento__main bento-cell bento-cell--2x2">
+        <div class="hero-bento__content">
+          {%- if section.settings.subtitle != blank -%}
+            <span class="hero-bento__eyebrow">
+              <span class="hero-bento__eyebrow-icon">✨</span>
+              {{ section.settings.subtitle }}
+            </span>
+          {%- endif -%}
+
+          {%- if section.settings.title != blank -%}
+            <h1 class="hero-bento__title">
+              {{ section.settings.title | split: ' ' | first }}
+              <span class="handdrawn-underline">{{ section.settings.title | split: ' ' | slice: 1, 10 | join: ' ' }}</span>
+            </h1>
+          {%- endif -%}
+
+          {%- if section.settings.description != blank -%}
+            <div class="hero-bento__description">
+              {{ section.settings.description }}
+            </div>
+          {%- endif -%}
+
+          <!-- CTAs siguiendo Patrón Z - Abajo a la derecha -->
+          <div class="hero-bento__actions">
+            {%- if section.settings.button_label != blank -%}
+              <a href="{{ section.settings.button_link }}" class="btn btn--primary btn--lg hero-bento__cta">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="9" cy="21" r="1"/>
+                  <circle cx="20" cy="21" r="1"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+                {{ section.settings.button_label }}
+              </a>
+            {%- endif -%}
+
+            {%- if section.settings.button_label_2 != blank -%}
+              <a href="{{ section.settings.button_link_2 }}" class="btn btn--secondary btn--lg">
+                {{ section.settings.button_label_2 }}
+              </a>
+            {%- endif -%}
+          </div>
+
+          <!-- Hand-drawn arrow pointing to CTA -->
+          <div class="hero-bento__arrow handdrawn-arrow" aria-hidden="true"></div>
+        </div>
+
+        <!-- Background decoration -->
+        <div class="hero-bento__bg-pattern" aria-hidden="true"></div>
+      </div>
+
+      <!-- Celda Superior Derecha - Oferta Flash / Producto Destacado -->
+      <div class="hero-bento__offer bento-cell">
+        <div class="hero-bento__offer-content">
+          <span class="badge badge--stopping kinetic-text">
+            {%- if section.settings.offer_badge != blank -%}
+              {{ section.settings.offer_badge }}
+            {%- else -%}
+              🔥 Oferta Flash
+            {%- endif -%}
+          </span>
+          
+          {%- if section.settings.offer_title != blank -%}
+            <h3 class="hero-bento__offer-title">{{ section.settings.offer_title }}</h3>
+          {%- else -%}
+            <h3 class="hero-bento__offer-title">Hasta <span class="text-handwritten">50% OFF</span></h3>
+          {%- endif -%}
+          
+          {%- if section.settings.offer_text != blank -%}
+            <p class="hero-bento__offer-text">{{ section.settings.offer_text }}</p>
+          {%- else -%}
+            <p class="hero-bento__offer-text">En productos seleccionados</p>
+          {%- endif -%}
+
+          {%- if section.settings.offer_link != blank -%}
+            <a href="{{ section.settings.offer_link }}" class="hero-bento__offer-link">
+              Ver ofertas
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          {%- endif -%}
+        </div>
+        
+        <!-- Decorative gradient -->
+        <div class="hero-bento__offer-gradient" aria-hidden="true"></div>
+      </div>
+
+      <!-- Celda Inferior Derecha - Trust Badges -->
+      <div class="hero-bento__trust bento-cell">
+        <div class="hero-bento__trust-content">
+          <div class="hero-bento__trust-item">
+            <div class="hero-bento__trust-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13"/>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                <circle cx="5.5" cy="18.5" r="2.5"/>
+                <circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+            </div>
+            <span>Envío Gratis +$100k</span>
+          </div>
+          
+          <div class="hero-bento__trust-item">
+            <div class="hero-bento__trust-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <polyline points="9 12 11 14 15 10"/>
+              </svg>
+            </div>
+            <span>Compra 100% Segura</span>
+          </div>
+          
+          <div class="hero-bento__trust-item">
+            <div class="hero-bento__trust-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <span>Garantía 6 Meses</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Celda adicional opcional - Categoría destacada -->
+      {%- if section.settings.show_category_cell -%}
+        <div class="hero-bento__category bento-cell bento-cell--2x1">
+          <a href="{{ section.settings.category_link }}" class="hero-bento__category-link">
+            {%- if section.settings.category_image != blank -%}
+              <img 
+                src="{{ section.settings.category_image | image_url: width: 400 }}"
+                alt="{{ section.settings.category_title | default: 'Categoría' }}"
+                loading="lazy"
+                class="hero-bento__category-image"
+              >
+            {%- endif -%}
+            <div class="hero-bento__category-overlay">
+              <span class="hero-bento__category-title">
+                {{ section.settings.category_title | default: 'Ver Categoría' }}
+              </span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </a>
+        </div>
+      {%- endif -%}
+
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-section {
+    padding: var(--space-8) 0;
+    background: var(--color-bg);
+    overflow: hidden;
+  }
+
+  .hero-container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+  }
+
+  /* Bento Grid Layout */
+  .hero-bento {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: var(--bento-gap-lg);
+    min-height: 500px;
+  }
+
+  /* Main Cell - Hero Message */
+  .hero-bento__main {
+    grid-row: span 2;
+    position: relative;
+    background: linear-gradient(135deg, var(--color-accent) 0%, #8B5CF6 50%, var(--color-secondary) 100%);
+    padding: var(--space-10);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: none;
+  }
+
+  .hero-bento__main:hover {
+    border: none;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .hero-bento__content {
+    position: relative;
+    z-index: 2;
+    max-width: 540px;
+  }
+
+  .hero-bento__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: white;
+    margin-bottom: var(--space-6);
+  }
+
+  .hero-bento__eyebrow-icon {
+    font-size: var(--text-base);
+  }
+
+  .hero-bento__title {
+    font-family: var(--font-heading);
+    font-size: clamp(var(--text-3xl), 5vw, var(--text-5xl));
+    font-weight: 700;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: var(--space-4);
+  }
+
+  .hero-bento__title .handdrawn-underline::after {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10'%3E%3Cpath d='M0 8 Q25 2, 50 8 T100 8' stroke='%23FBBF24' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat;
+    background-size: 100% 100%;
+    bottom: -2px;
+    height: 10px;
+  }
+
+  .hero-bento__description {
+    font-size: var(--text-lg);
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+    margin-bottom: var(--space-8);
+  }
+
+  .hero-bento__description p {
+    margin: 0;
+  }
+
+  .hero-bento__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+
+  .hero-bento__cta {
+    background: white;
+    color: var(--color-accent);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .hero-bento__cta:hover {
+    background: var(--color-bg);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .hero-bento__actions .btn--secondary {
+    background: transparent;
+    color: white;
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .hero-bento__actions .btn--secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: white;
+  }
+
+  .hero-bento__arrow {
+    position: absolute;
+    bottom: var(--space-4);
+    right: var(--space-4);
+    transform: rotate(45deg);
+    opacity: 0.6;
+  }
+
+  /* Background Pattern */
+  .hero-bento__bg-pattern {
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  /* Offer Cell */
+  .hero-bento__offer {
+    position: relative;
+    background: var(--color-surface);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .hero-bento__offer-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-bento__offer .badge {
+    margin-bottom: var(--space-3);
+  }
+
+  .hero-bento__offer-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+    line-height: 1.2;
+  }
+
+  .hero-bento__offer-title .text-handwritten {
+    font-size: var(--text-3xl);
+  }
+
+  .hero-bento__offer-text {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-4);
+  }
+
+  .hero-bento__offer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-accent);
+    transition: gap var(--transition-fast);
+  }
+
+  .hero-bento__offer-link:hover {
+    gap: var(--space-3);
+  }
+
+  .hero-bento__offer-gradient {
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, var(--color-accent-light) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Trust Cell */
+  .hero-bento__trust {
+    background: var(--color-bg-alt);
+    padding: var(--space-5);
+    display: flex;
+    align-items: center;
+  }
+
+  .hero-bento__trust-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+  }
+
+  .hero-bento__trust-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .hero-bento__trust-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-accent-light);
+    border-radius: var(--radius-md);
+    color: var(--color-accent);
+    flex-shrink: 0;
+  }
+
+  .hero-bento__trust-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Category Cell */
+  .hero-bento__category {
+    position: relative;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .hero-bento__category-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .hero-bento__category-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+  }
+
+  .hero-bento__category:hover .hero-bento__category-image {
+    transform: scale(1.05);
+  }
+
+  .hero-bento__category-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 60%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: var(--space-4);
+    color: white;
+  }
+
+  .hero-bento__category-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 600;
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .hero-bento {
+      grid-template-columns: 1fr 1fr;
+      min-height: 450px;
+    }
+
+    .hero-bento__main {
+      grid-column: span 2;
+      grid-row: span 1;
+      padding: var(--space-8);
+    }
+
+    .hero-bento__title {
+      font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-section {
+      padding: var(--space-4) 0;
+    }
+
+    .hero-bento {
+      grid-template-columns: 1fr;
+      gap: var(--bento-gap);
+      min-height: auto;
+    }
+
+    .hero-bento__main {
+      grid-column: span 1;
+      padding: var(--space-6);
+      min-height: 350px;
+    }
+
+    .hero-bento__actions {
+      flex-direction: column;
+    }
+
+    .hero-bento__actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .hero-bento__arrow {
+      display: none;
+    }
+
+    .hero-bento__offer {
+      padding: var(--space-5);
+    }
+
+    .hero-bento__trust-content {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    .hero-bento__trust-item {
+      flex: 1 1 45%;
+      font-size: var(--text-xs);
+    }
+
+    .hero-bento__trust-icon {
+      width: 32px;
+      height: 32px;
+    }
+
+    .hero-bento__category {
+      min-height: 120px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero-bento__trust-content {
+      flex-direction: column;
+    }
+
+    .hero-bento__trust-item {
+      flex: 1 1 100%;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Hero Bento 2026",
+  "tag": "section",
+  "class": "section-hero-bento",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Contenido Principal"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Subtítulo / Eyebrow",
+      "default": "Ofertas especiales esta semana"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Título principal",
+      "default": "Tecnología de calidad al mejor precio"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Descripción",
+      "default": "<p>Encuentra computadores, tablets, parlantes y accesorios con garantía. Compra fácil y segura con envío a todo el país.</p>"
+    },
+    {
+      "type": "header",
+      "content": "Botón Principal (CTA)"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Texto del botón",
+      "default": "Ver productos"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Enlace del botón"
+    },
+    {
+      "type": "header",
+      "content": "Botón Secundario"
+    },
+    {
+      "type": "text",
+      "id": "button_label_2",
+      "label": "Texto del botón secundario",
+      "default": "Ver ofertas"
+    },
+    {
+      "type": "url",
+      "id": "button_link_2",
+      "label": "Enlace del botón secundario"
+    },
+    {
+      "type": "header",
+      "content": "Celda de Oferta"
+    },
+    {
+      "type": "text",
+      "id": "offer_badge",
+      "label": "Badge de oferta",
+      "default": "🔥 Oferta Flash"
+    },
+    {
+      "type": "text",
+      "id": "offer_title",
+      "label": "Título de oferta",
+      "default": "Hasta 50% OFF"
+    },
+    {
+      "type": "text",
+      "id": "offer_text",
+      "label": "Texto de oferta",
+      "default": "En productos seleccionados"
+    },
+    {
+      "type": "url",
+      "id": "offer_link",
+      "label": "Enlace de oferta"
+    },
+    {
+      "type": "header",
+      "content": "Celda de Categoría (Opcional)"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_category_cell",
+      "label": "Mostrar celda de categoría",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "category_title",
+      "label": "Título de categoría",
+      "default": "Laptops"
+    },
+    {
+      "type": "url",
+      "id": "category_link",
+      "label": "Enlace de categoría"
+    },
+    {
+      "type": "image_picker",
+      "id": "category_image",
+      "label": "Imagen de categoría"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero Bento 2026",
+      "category": "Hero"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,31 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-cart",
+      "settings": {
+        "show_cart_note": true,
+        "show_vendor": true
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,70 @@
+{
+  "municipios": [
+    {
+      "nombre": "Rionegro",
+      "lat": 6.1552,
+      "lon": -75.3743,
+      "codigo_dane": "05615"
+    },
+    {
+      "nombre": "La Ceja",
+      "lat": 6.0328,
+      "lon": -75.4264,
+      "codigo_dane": "05140"
+    },
+    {
+      "nombre": "Marinilla",
+      "lat": 6.1769,
+      "lon": -75.3367,
+      "codigo_dane": "05440"
+    },
+    {
+      "nombre": "El Carmen de Viboral",
+      "lat": 6.0833,
+      "lon": -75.3356,
+      "codigo_dane": "05148"
+    },
+    {
+      "nombre": "Santuario",
+      "lat": 6.1389,
+      "lon": -75.2631,
+      "codigo_dane": "06642"
+    },
+    {
+      "nombre": "El Retiro",
+      "lat": 6.0617,
+      "lon": -75.5039,
+      "codigo_dane": "05607"
+    },
+    {
+      "nombre": "Guarne",
+      "lat": 6.2781,
+      "lon": -75.4431,
+      "codigo_dane": "05318"
+    }
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
