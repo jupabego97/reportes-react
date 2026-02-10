@@ -50,6 +50,7 @@ export const queryKeys = {
   abc: (filters: FilterParams) => ['abc', filters] as const,
   rankingVendedores: (filters: FilterParams) => ['ranking-vendedores', filters] as const,
   sugerenciasCompra: (filters: FilterParams) => ['sugerencias-compra', filters] as const,
+  resumenComprasProveedores: (filters: FilterParams) => ['resumen-compras-proveedores', filters] as const,
   insights: (filters: FilterParams) => ['insights', filters] as const,
 };
 
@@ -181,12 +182,40 @@ export function useSugerenciasCompra() {
   });
 }
 
+export function useResumenComprasProveedores() {
+  const filters = useFilterParams();
+  return useQuery({
+    queryKey: queryKeys.resumenComprasProveedores(filters),
+    queryFn: () => apiService.getResumenProveedoresCompra(filters),
+    staleTime: 60000,
+  });
+}
+
 export function useInsights() {
   const filters = useFilterParams();
   return useQuery({
     queryKey: queryKeys.insights(filters),
     queryFn: () => apiService.getInsights(filters),
     staleTime: 60000,
+  });
+}
+
+export function useGenerarOrdenCompra() {
+  const filters = useFilterParams();
+  return useMutation({
+    mutationFn: ({
+      proveedor,
+      prioridadMinima,
+    }: {
+      proveedor: string;
+      prioridadMinima?: string;
+    }) => apiService.getOrdenCompraProveedor(proveedor, filters, prioridadMinima),
+    onSuccess: () => {
+      toast.success('Orden de compra generada');
+    },
+    onError: (error) => {
+      toast.error(`Error al generar orden: ${error.message}`);
+    },
   });
 }
 

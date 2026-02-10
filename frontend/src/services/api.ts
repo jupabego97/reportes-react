@@ -174,6 +174,19 @@ export const apiService = {
   getSugerenciasCompra: (filters: FilterParams) =>
     api.get<any>('/api/compras/sugerencias', filters),
 
+  getResumenProveedoresCompra: (filters: FilterParams) =>
+    api.get<any[]>('/api/compras/proveedores', filters),
+
+  getOrdenCompraProveedor: (
+    proveedor: string,
+    filters: FilterParams,
+    prioridadMinima?: string
+  ) =>
+    api.get<any>(`/api/compras/orden/${encodeURIComponent(proveedor)}`, {
+      ...filters,
+      prioridad_minima: prioridadMinima,
+    }),
+
   // Insights
   getInsights: (filters: FilterParams) =>
     api.get<any>('/api/insights', filters),

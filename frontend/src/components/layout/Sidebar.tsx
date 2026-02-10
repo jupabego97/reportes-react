@@ -16,6 +16,7 @@ import {
   Truck,
   PackageSearch,
   Lightbulb,
+  Target,
   Menu,
   X,
 } from 'lucide-react';
@@ -39,6 +40,7 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Centro de decisiones', href: '/decisiones', icon: Target },
   { name: 'Márgenes', href: '/margenes', icon: TrendingUp },
   { name: 'Predicciones', href: '/predicciones', icon: LineChart },
   { name: 'Análisis ABC', href: '/abc', icon: BarChart3 },

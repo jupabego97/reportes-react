@@ -15,6 +15,7 @@ import {
 
 const routeNames: Record<string, string> = {
   '': 'Dashboard',
+  'decisiones': 'Centro de Decisiones',
   'margenes': 'Analisis de Margenes',
   'predicciones': 'Predicciones',
   'abc': 'Analisis ABC',

@@ -6,6 +6,7 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { CentroDecisiones } from './pages/CentroDecisiones';
 import { Margenes } from './pages/Margenes';
 import { Predicciones } from './pages/Predicciones';
 import { AnalisisABC } from './pages/AnalisisABC';
@@ -66,6 +67,7 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
+              <Route path="decisiones" element={<CentroDecisiones />} />
               <Route path="margenes" element={<Margenes />} />
               <Route path="predicciones" element={<Predicciones />} />
               <Route path="abc" element={<AnalisisABC />} />
