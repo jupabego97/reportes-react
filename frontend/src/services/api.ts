@@ -172,7 +172,7 @@ export const apiService = {
 
   // Vendedores
   getRankingVendedores: (filters: FilterParams) =>
-    api.get<any>('/api/vendedores/ranking', filters),
+    api.get<any>('/api/vendedores', filters),
 
   // Compras
   getSugerenciasCompra: (filters: FilterParams) =>
