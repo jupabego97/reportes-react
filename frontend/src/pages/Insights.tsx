@@ -1,8 +1,12 @@
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, TrendingUp, Package, Truck, Lightbulb } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Package, Truck, Lightbulb, Search, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
 import {
   Table,
@@ -13,10 +17,12 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { useInsights } from '../hooks/useApi';
-import { cn } from '../lib/utils';
+import { cn, exportToCSV } from '../lib/utils';
+import { MetricTooltip } from '../components/ui/metric-tooltip';
 
 export function Insights() {
   const { data, isLoading, error } = useInsights();
+  const [busqueda, setBusqueda] = useState('');
 
   if (error) {
     return (
@@ -26,10 +32,42 @@ export function Insights() {
     );
   }
 
-  const productosRiesgo = data?.productos_en_riesgo || [];
-  const oportunidades = data?.oportunidades || [];
-  const sobreStock = data?.sobre_stock || [];
-  const proveedoresRiesgo = data?.proveedores_en_riesgo || [];
+  const productosRiesgoRaw = data?.productos_en_riesgo || [];
+  const oportunidadesRaw = data?.oportunidades || [];
+  const sobreStockRaw = data?.sobre_stock || [];
+  const proveedoresRiesgoRaw = data?.proveedores_en_riesgo || [];
+
+  const q = busqueda.toLowerCase().trim();
+  const filtrar = (items: any[]) => {
+    if (!q) return items;
+    return items.filter((p: any) =>
+      (p.nombre || '').toLowerCase().includes(q) ||
+      (p.proveedor || '').toLowerCase().includes(q) ||
+      (p.familia || '').toLowerCase().includes(q)
+    );
+  };
+
+  const productosRiesgo = useMemo(() => filtrar(productosRiesgoRaw), [productosRiesgoRaw, q]);
+  const oportunidades = useMemo(() => filtrar(oportunidadesRaw), [oportunidadesRaw, q]);
+  const sobreStock = useMemo(() => filtrar(sobreStockRaw), [sobreStockRaw, q]);
+  const proveedoresRiesgo = useMemo(() => {
+    if (!q) return proveedoresRiesgoRaw;
+    return proveedoresRiesgoRaw.filter((p: any) => (p.proveedor || '').toLowerCase().includes(q));
+  }, [proveedoresRiesgoRaw, q]);
+
+  const handleExportarRiesgo = () => {
+    const headers = ['Producto', 'Proveedor', 'Stock', 'Venta/dia', 'Dias stock', 'Comprar'];
+    const rows = productosRiesgoRaw.map((p: any) => [
+      p.nombre || '',
+      p.proveedor || '',
+      String(p.cantidad_disponible || 0),
+      String(p.venta_diaria || 0),
+      String(p.dias_stock?.toFixed(0) || 0),
+      String(p.cantidad_sugerida || 0),
+    ]);
+    exportToCSV(headers, rows, `productos_riesgo_${new Date().toISOString().slice(0, 10)}.csv`);
+    toast.success('Productos en riesgo exportados como CSV');
+  };
 
   return (
     <div className="space-y-6">
@@ -43,6 +81,17 @@ export function Insights() {
 
       {/* Filtros */}
       <FilterPanel />
+
+      {/* Busqueda rapida */}
+      <div className="relative w-full md:w-80">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar producto, proveedor o familia..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="pl-9"
+        />
+      </div>
 
       {isLoading ? (
         <div className="grid gap-6">
@@ -120,9 +169,15 @@ export function Insights() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
               <Card className="border-red-500/50">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-red-600">
-                    <AlertTriangle className="h-5 w-5" /> Productos Clase A en Riesgo - Acción Inmediata
-                  </CardTitle>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <CardTitle className="flex items-center gap-2 text-red-600">
+                      <AlertTriangle className="h-5 w-5" /> Productos Clase A en Riesgo - Accion Inmediata
+                      <MetricTooltip text="Pareto: A = top 80% de ventas (alta rotacion). Estos productos son criticos y no deben quedarse sin stock." />
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={handleExportarRiesgo}>
+                      <Download className="h-4 w-4 mr-1" /> CSV
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -132,14 +187,17 @@ export function Insights() {
                         <TableHead>Proveedor</TableHead>
                         <TableHead className="text-right">Stock</TableHead>
                         <TableHead className="text-right">Venta/día</TableHead>
-                        <TableHead className="text-right">Días stock</TableHead>
+                        <TableHead className="text-right">
+                          Dias stock
+                          <MetricTooltip text="Stock actual / venta diaria promedio (ultimos 30 dias). Indica cuantos dias dura el inventario actual al ritmo de venta actual." />
+                        </TableHead>
                         <TableHead className="text-right">Comprar</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {productosRiesgo.slice(0, 15).map((p: any, i: number) => (
                         <TableRow key={i}>
-                          <TableCell className="font-medium max-w-[200px] truncate">{p.nombre}</TableCell>
+                          <TableCell className="font-medium max-w-[200px] truncate" title={p.nombre}>{p.nombre}</TableCell>
                           <TableCell>{p.proveedor || '-'}</TableCell>
                           <TableCell className="text-right">
                             <span className={cn(p.cantidad_disponible === 0 && 'text-red-600 font-bold')}>
@@ -184,7 +242,7 @@ export function Insights() {
                     <TableBody>
                       {oportunidades.slice(0, 15).map((p: any, i: number) => (
                         <TableRow key={i}>
-                          <TableCell className="font-medium max-w-[200px] truncate">{p.nombre}</TableCell>
+                          <TableCell className="font-medium max-w-[200px] truncate" title={p.nombre}>{p.nombre}</TableCell>
                           <TableCell><Badge variant="default">{p.clasificacion_abc || '-'}</Badge></TableCell>
                           <TableCell>{p.proveedor || '-'}</TableCell>
                           <TableCell className="text-right">{p.cantidad_disponible}</TableCell>
@@ -222,7 +280,7 @@ export function Insights() {
                     <TableBody>
                       {sobreStock.slice(0, 15).map((p: any, i: number) => (
                         <TableRow key={i}>
-                          <TableCell className="font-medium max-w-[200px] truncate">{p.nombre}</TableCell>
+                          <TableCell className="font-medium max-w-[200px] truncate" title={p.nombre}>{p.nombre}</TableCell>
                           <TableCell>{p.familia || '-'}</TableCell>
                           <TableCell className="text-right">{p.cantidad_disponible}</TableCell>
                           <TableCell className="text-right">{p.venta_diaria}</TableCell>

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Filter, X, RefreshCw, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -62,6 +62,54 @@ export function FilterPanel() {
     }
   };
 
+  const datePresets = useMemo(() => {
+    const today = new Date();
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    return [
+      {
+        label: 'Hoy',
+        getRange: () => [fmt(today), fmt(today)],
+      },
+      {
+        label: '7 dias',
+        getRange: () => {
+          const start = new Date(today);
+          start.setDate(start.getDate() - 6);
+          return [fmt(start), fmt(today)];
+        },
+      },
+      {
+        label: '30 dias',
+        getRange: () => {
+          const start = new Date(today);
+          start.setDate(start.getDate() - 29);
+          return [fmt(start), fmt(today)];
+        },
+      },
+      {
+        label: 'Este mes',
+        getRange: () => {
+          const start = new Date(today.getFullYear(), today.getMonth(), 1);
+          return [fmt(start), fmt(today)];
+        },
+      },
+      {
+        label: 'Mes pasado',
+        getRange: () => {
+          const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+          const end = new Date(today.getFullYear(), today.getMonth(), 0);
+          return [fmt(start), fmt(end)];
+        },
+      },
+    ];
+  }, []);
+
+  const handlePreset = (getRange: () => string[]) => {
+    const [start, end] = getRange();
+    setFechaInicio(start);
+    setFechaFin(end);
+  };
+
   const productosOptions = (opciones?.productos || []).map((p) => ({ value: p, label: p }));
   const vendedoresOptions = (opciones?.vendedores || []).map((v) => ({ value: v, label: v }));
   const familiasOptions = (opciones?.familias || []).map((f) => ({ value: f, label: f }));
@@ -112,6 +160,22 @@ export function FilterPanel() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Atajos de fecha */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          {datePresets.map((preset) => (
+            <Button
+              key={preset.label}
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => handlePreset(preset.getRange)}
+            >
+              {preset.label}
+            </Button>
+          ))}
+        </div>
+
         {/* Fila principal - siempre visible */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-2">

@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { ResponsiveBar } from '@nivo/bar';
-import { TrendingUp, TrendingDown, AlertTriangle, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, Info, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
 import {
   Table,
@@ -14,7 +16,8 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { useMargenes } from '../hooks/useApi';
-import { cn } from '../lib/utils';
+import { cn, exportToCSV } from '../lib/utils';
+import { MetricTooltip } from '../components/ui/metric-tooltip';
 
 export function Margenes() {
   const { data, isLoading, error } = useMargenes();
@@ -71,7 +74,10 @@ export function Margenes() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Margen Promedio</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    Margen Promedio
+                    <MetricTooltip text="Margen = precio_venta - precio_compra. Margen promedio es el promedio ponderado por unidades vendidas." />
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
@@ -89,7 +95,10 @@ export function Margenes() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Margen Generado</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    Total Margen Generado
+                    <MetricTooltip text="Margen total = suma de (margen unitario x cantidad vendida) para todos los productos del periodo." />
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className={cn("text-2xl font-bold", (data.margen_total || 0) >= 0 ? "text-green-600" : "text-red-600")}>
@@ -141,7 +150,23 @@ export function Margenes() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
               <Card>
                 <CardHeader>
-                  <CardTitle>Márgenes por Familia</CardTitle>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <CardTitle>Margenes por Familia</CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const headers = ['Familia', 'Ventas Totales', 'Margen Total', '% Margen', 'Cantidad'];
+                      const rows = (data.margenes_por_familia || []).map((f: any) => [
+                        f.familia || '',
+                        String(f.ventas_totales || 0),
+                        String(f.margen_total || 0),
+                        String((f.margen_porcentaje || 0).toFixed(1)),
+                        String(f.cantidad_total || 0),
+                      ]);
+                      exportToCSV(headers, rows, `margenes_familia_${new Date().toISOString().slice(0, 10)}.csv`);
+                      toast.success('Margenes por familia exportados como CSV');
+                    }}>
+                      <Download className="h-4 w-4 mr-1" /> CSV
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -275,7 +300,7 @@ export function Margenes() {
                   <TableBody>
                     {data.bottom_margen?.slice(0, 10).map((producto: any, index: number) => (
                       <TableRow key={index}>
-                        <TableCell className="font-medium max-w-[200px] truncate">{producto.nombre}</TableCell>
+                        <TableCell className="font-medium max-w-[200px] truncate" title={producto.nombre}>{producto.nombre}</TableCell>
                         <TableCell className="text-right">
                           <span className={cn((producto.margen || 0) < 0 ? 'text-red-600' : 'text-green-600')}>
                             ${producto.margen?.toFixed(2) || 0}

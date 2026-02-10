@@ -1,8 +1,12 @@
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, AlertTriangle, Package, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ShoppingCart, AlertTriangle, Package, TrendingUp, TrendingDown, Minus, Search, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
 import {
   Table,
@@ -13,7 +17,8 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { useSugerenciasCompra } from '../hooks/useApi';
-import { cn } from '../lib/utils';
+import { cn, exportToCSV } from '../lib/utils';
+import { MetricTooltip } from '../components/ui/metric-tooltip';
 
 // Mapeo de prioridades del backend a estilos del frontend
 const prioridadConfig: Record<string, { color: 'destructive' | 'secondary' | 'outline' | 'default'; icon: string; label: string }> = {
@@ -38,6 +43,7 @@ function AbcBadge({ abc }: { abc?: string }) {
 
 export function Compras() {
   const { data, isLoading, error } = useSugerenciasCompra();
+  const [busqueda, setBusqueda] = useState('');
 
   if (error) {
     return (
@@ -48,6 +54,35 @@ export function Compras() {
   }
 
   const sugerencias: any[] = data && Array.isArray(data) ? data : [];
+
+  const sugerenciasFiltradas = useMemo(() => {
+    const q = busqueda.toLowerCase().trim();
+    if (!q) return sugerencias;
+    return sugerencias.filter((s: any) =>
+      (s.nombre || '').toLowerCase().includes(q) ||
+      (s.proveedor || '').toLowerCase().includes(q) ||
+      (s.familia || '').toLowerCase().includes(q)
+    );
+  }, [sugerencias, busqueda]);
+
+  const handleExportarCSV = () => {
+    const headers = ['Prioridad', 'Producto', 'ABC', 'Tendencia', 'Familia', 'Proveedor', 'Stock', 'Venta/dia', 'Dias stock', 'Sugerido', 'ROI Est.'];
+    const rows = sugerencias.map((p: any) => [
+      p.prioridad || '',
+      p.nombre || '',
+      p.clasificacion_abc || '',
+      p.tendencia || '',
+      p.familia || '',
+      p.proveedor || '',
+      String(p.cantidad_disponible || 0),
+      String(p.venta_diaria || 0),
+      String(p.dias_stock?.toFixed(0) || 0),
+      String(p.cantidad_sugerida || 0),
+      String(p.roi_estimado || 0),
+    ]);
+    exportToCSV(headers, rows, `sugerencias_compra_${new Date().toISOString().slice(0, 10)}.csv`);
+    toast.success('Sugerencias exportadas como CSV');
+  };
 
   const inversionTotal = sugerencias.reduce((acc, s) => acc + (s.costo_estimado || 0), 0);
   const roiTotal = sugerencias.reduce((acc, s) => acc + (s.roi_estimado || 0), 0);
@@ -93,7 +128,10 @@ export function Compras() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">ROI estimado total</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    ROI estimado total
+                    <MetricTooltip text="Retorno bruto estimado = (precio_venta - precio_compra) x cantidad_sugerida. Basado en el margen historico del producto." />
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-emerald-600">${roiTotal.toLocaleString()}</div>
@@ -104,7 +142,10 @@ export function Compras() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               <Card className={cn(claseARiesgo > 0 && 'border-red-500/50')}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Productos clase A en riesgo</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    Productos clase A en riesgo
+                    <MetricTooltip text="Pareto: A = top 80% de ventas (alta rotacion). Estos productos son criticos y no deben quedarse sin stock." />
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{claseARiesgo}</div>
@@ -196,7 +237,7 @@ export function Compras() {
                       .slice(0, 10)
                       .map((p: any, i: number) => (
                         <TableRow key={i}>
-                          <TableCell className="font-medium max-w-[200px] truncate">{p.nombre}</TableCell>
+                          <TableCell className="font-medium max-w-[200px] truncate" title={p.nombre}>{p.nombre}</TableCell>
                           <TableCell><AbcBadge abc={p.clasificacion_abc} /></TableCell>
                           <TableCell><TendenciaIndicator tendencia={p.tendencia} /></TableCell>
                           <TableCell>{p.proveedor || '-'}</TableCell>
@@ -214,9 +255,25 @@ export function Compras() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" /> Todas las Sugerencias de Compra
-                </CardTitle>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5" /> Todas las Sugerencias de Compra
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-full md:w-64">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar producto, proveedor o familia..."
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                        className="pl-9 h-9"
+                      />
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleExportarCSV}>
+                      <Download className="h-4 w-4 mr-1" /> CSV
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -224,26 +281,38 @@ export function Compras() {
                     <TableRow>
                       <TableHead>Prioridad</TableHead>
                       <TableHead>Producto</TableHead>
-                      <TableHead>ABC</TableHead>
-                      <TableHead>Tendencia</TableHead>
+                      <TableHead>
+                        ABC
+                        <MetricTooltip text="Pareto: A = top 80% de ventas (alta rotacion), B = siguiente 15%, C = ultimo 5%. Los productos A son criticos y no deben quedarse sin stock." />
+                      </TableHead>
+                      <TableHead>
+                        Tendencia
+                        <MetricTooltip text="Compara la venta promedio de los ultimos 7 dias vs los 7 dias anteriores. Creciente: +10%, Decreciente: -10%, Estable: entre -10% y +10%." />
+                      </TableHead>
                       <TableHead>Familia</TableHead>
                       <TableHead>Proveedor</TableHead>
                       <TableHead className="text-right">Stock</TableHead>
-                      <TableHead className="text-right">Venta/día</TableHead>
-                      <TableHead className="text-right">Días stock</TableHead>
+                      <TableHead className="text-right">Venta/dia</TableHead>
+                      <TableHead className="text-right">
+                        Dias stock
+                        <MetricTooltip text="Stock actual / venta diaria promedio (ultimos 30 dias). Indica cuantos dias dura el inventario actual al ritmo de venta actual." />
+                      </TableHead>
                       <TableHead className="text-right">Sugerido</TableHead>
-                      <TableHead className="text-right">ROI Est.</TableHead>
+                      <TableHead className="text-right">
+                        ROI Est.
+                        <MetricTooltip text="Retorno bruto estimado = (precio_venta - precio_compra) x cantidad_sugerida. Basado en el margen historico del producto." />
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sugerencias.map((producto: any, index: number) => {
+                    {sugerenciasFiltradas.map((producto: any, index: number) => {
                       const cfg = prioridadConfig[producto.prioridad] || { color: 'default' as const, icon: '', label: producto.prioridad };
                       return (
                         <TableRow key={index}>
                           <TableCell>
                             <Badge variant={cfg.color}>{cfg.icon} {cfg.label}</Badge>
                           </TableCell>
-                          <TableCell className="font-medium max-w-[180px] truncate">{producto.nombre}</TableCell>
+                          <TableCell className="font-medium max-w-[180px] truncate" title={producto.nombre}>{producto.nombre}</TableCell>
                           <TableCell><AbcBadge abc={producto.clasificacion_abc} /></TableCell>
                           <TableCell><TendenciaIndicator tendencia={producto.tendencia} /></TableCell>
                           <TableCell>{producto.familia || '-'}</TableCell>

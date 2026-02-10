@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Target, Truck, ClipboardList } from 'lucide-react';
+import { AlertTriangle, Target, Truck, ClipboardList, Search, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
 import {
   Table,
@@ -15,7 +17,8 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { useGenerarOrdenCompra, useResumenComprasProveedores, useSugerenciasCompra } from '../hooks/useApi';
-import { formatCurrency, formatNumber } from '../lib/utils';
+import { formatCurrency, formatNumber, exportToCSV } from '../lib/utils';
+import { MetricTooltip } from '../components/ui/metric-tooltip';
 
 const prioridadesAccionHoy = new Set(['🔴 Urgente', '🟠 Alta']);
 type VentanaDecision = 'hoy' | '48h' | '7d';
@@ -40,6 +43,7 @@ export function CentroDecisiones() {
   const generarOrden = useGenerarOrdenCompra();
   const [ordenActual, setOrdenActual] = useState<OrdenCompra | null>(null);
   const [ventana, setVentana] = useState<VentanaDecision>('hoy');
+  const [busqueda, setBusqueda] = useState('');
 
   const umbralDias = useMemo(() => {
     if (ventana === 'hoy') return 1;
@@ -55,10 +59,12 @@ export function CentroDecisiones() {
 
   const comprarHoy = useMemo(() => {
     const rows = Array.isArray(sugerencias) ? sugerencias : [];
+    const q = busqueda.toLowerCase().trim();
     return rows
       .filter((s: any) => prioridadesAccionHoy.has(s.prioridad) || (s.dias_stock ?? 999) <= umbralDias)
+      .filter((s: any) => !q || (s.nombre || '').toLowerCase().includes(q) || (s.proveedor || '').toLowerCase().includes(q))
       .sort((a: any, b: any) => (a.dias_stock ?? 999) - (b.dias_stock ?? 999));
-  }, [sugerencias, umbralDias]);
+  }, [sugerencias, umbralDias, busqueda]);
 
   const proveedoresUrgentes = useMemo(() => {
     const map = new Map<string, { proveedor: string; productos: number; unidades: number; costo: number }>();
@@ -82,51 +88,31 @@ export function CentroDecisiones() {
 
   const handleExportarOrdenCSV = () => {
     if (!ordenActual) return;
-
-    const encabezado = [
-      ['Proveedor', ordenActual.proveedor],
-      ['Fecha', ordenActual.fecha],
-      ['Total productos', String(ordenActual.total_productos || 0)],
-      ['Total unidades', String(ordenActual.total_unidades || 0)],
-      ['Costo total', String(ordenActual.costo_total || 0)],
-      [],
-      ['Item', 'Prioridad', 'Cantidad', 'Costo estimado'],
-    ];
-
-    const filas = (ordenActual.items || []).map((item) => [
+    const headers = ['Item', 'Prioridad', 'Cantidad', 'Costo estimado'];
+    const rows = (ordenActual.items || []).map((item) => [
       item.nombre,
       item.prioridad,
       String(item.cantidad_sugerida || 0),
       String(item.costo_estimado || 0),
     ]);
-
-    const csv = [...encabezado, ...filas]
-      .map((row) =>
-        row
-          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
-          .join(',')
-      )
-      .join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
     const proveedorSafe = (ordenActual.proveedor || 'proveedor').replace(/[^\w-]+/g, '_');
-    a.href = url;
-    a.download = `orden_compra_${proveedorSafe}_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    exportToCSV(headers, rows, `orden_compra_${proveedorSafe}_${new Date().toISOString().slice(0, 10)}.csv`);
+    toast.success('Orden exportada como CSV');
   };
 
   const handleGenerarOrden = async (proveedor: string) => {
     if (proveedor === 'Sin proveedor') return;
-    const data = await generarOrden.mutateAsync({
-      proveedor,
-      prioridadMinima: '🟠 Alta',
-    });
-    setOrdenActual(data as OrdenCompra);
+    if (!window.confirm(`Generar orden de compra para ${proveedor}?`)) return;
+    try {
+      const data = await generarOrden.mutateAsync({
+        proveedor,
+        prioridadMinima: '🟠 Alta',
+      });
+      setOrdenActual(data as OrdenCompra);
+      toast.success(`Orden generada para ${proveedor}`);
+    } catch {
+      toast.error('Error al generar la orden');
+    }
   };
 
   if (error) {
@@ -191,6 +177,7 @@ export function CentroDecisiones() {
                 <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                   <ClipboardList className="h-4 w-4" />
                   Inversion Recomendada
+                  <MetricTooltip text="Suma de costo_estimado (precio_compra x cantidad_sugerida) de todos los productos en la ventana de decision activa." />
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -209,7 +196,7 @@ export function CentroDecisiones() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap items-center gap-2 mb-4">
                   <Button
                     size="sm"
                     variant={ventana === 'hoy' ? 'default' : 'outline'}
@@ -231,6 +218,15 @@ export function CentroDecisiones() {
                   >
                     7 dias
                   </Button>
+                  <div className="relative ml-auto w-full md:w-64">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar producto o proveedor..."
+                      value={busqueda}
+                      onChange={(e) => setBusqueda(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
                 </div>
                 <Table>
                   <TableHeader>
@@ -239,7 +235,10 @@ export function CentroDecisiones() {
                       <TableHead>Proveedor</TableHead>
                       <TableHead>Prioridad</TableHead>
                       <TableHead className="text-right">Stock</TableHead>
-                      <TableHead className="text-right">Dias stock</TableHead>
+                      <TableHead className="text-right">
+                        Dias stock
+                        <MetricTooltip text="Stock actual / venta diaria promedio (ultimos 30 dias). Indica cuantos dias dura el inventario actual al ritmo de venta actual." />
+                      </TableHead>
                       <TableHead className="text-right">Sugerido</TableHead>
                       <TableHead className="text-right">Costo</TableHead>
                     </TableRow>
@@ -247,7 +246,7 @@ export function CentroDecisiones() {
                   <TableBody>
                     {comprarHoy.slice(0, 25).map((item: any, idx: number) => (
                       <TableRow key={`${item.nombre}-${idx}`}>
-                        <TableCell className="font-medium max-w-[220px] truncate">{item.nombre}</TableCell>
+                        <TableCell className="font-medium max-w-[220px] truncate" title={item.nombre}>{item.nombre}</TableCell>
                         <TableCell>{item.proveedor || 'Sin proveedor'}</TableCell>
                         <TableCell>
                           <Badge variant={item.prioridad === '🔴 Urgente' ? 'destructive' : 'secondary'}>
@@ -285,7 +284,11 @@ export function CentroDecisiones() {
                         onClick={() => handleGenerarOrden(prov.proveedor)}
                         disabled={generarOrden.isPending || prov.proveedor === 'Sin proveedor'}
                       >
-                        Generar orden en 1 clic
+                        {generarOrden.isPending ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generando...</>
+                        ) : (
+                          'Generar orden en 1 clic'
+                        )}
                       </Button>
                     </div>
                   ))}

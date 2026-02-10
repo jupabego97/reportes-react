@@ -12,7 +12,6 @@ import {
   ChevronRight,
   LogOut,
   User,
-  Settings,
   Truck,
   PackageSearch,
   Lightbulb,
@@ -199,10 +198,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             <DropdownMenuItem disabled>
               <User className="mr-2 h-4 w-4" />
               <span>{user?.username}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Configuracion</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-red-600">
