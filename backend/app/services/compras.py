@@ -1,9 +1,8 @@
 """
-Servicio de sugerencias de compras - Versión mejorada.
-Incluye: ROI, órdenes por proveedor, productos agotados, punto de reorden.
+Servicio de sugerencias de compras.
 """
-from datetime import datetime, date
-from typing import List, Optional, Dict, Any
+from datetime import datetime
+from typing import List, Optional, Dict
 
 import numpy as np
 from sqlalchemy import text
@@ -14,12 +13,14 @@ from app.models.schemas import (
     SugerenciaCompraResponse,
     ResumenProveedorResponse,
     OrdenCompraResponse,
+    ABCResponse,
 )
 from app.services.ventas import VentasService
+from app.services.abc import ABCService
 
 
 class ComprasService:
-    """Servicio mejorado para sugerencias de compras."""
+    """Servicio para sugerencias de compras."""
     
     def __init__(self, db: AsyncSession, ventas_service: VentasService):
         self.db = db
@@ -47,56 +48,118 @@ class ComprasService:
         except Exception:
             return {}
     
+    async def _get_clasificacion_abc_por_producto(
+        self, filters: FilterParams
+    ) -> Dict[str, str]:
+        """Obtiene un mapa nombre_producto -> clasificación ABC."""
+        abc_service = ABCService(self.ventas_service)
+        abc: ABCResponse = await abc_service.get_analisis_abc(filters)
+        return {p.nombre: p.clasificacion for p in abc.productos}
+
     async def get_sugerencias(self, filters: FilterParams) -> List[SugerenciaCompraResponse]:
-        """Calcula sugerencias de reposición."""
+        """Calcula sugerencias de reposición con inteligencia adicional (ABC, tendencia, ROI)."""
         ventas, _ = await self.ventas_service.get_ventas(filters)
         inventario = await self.get_inventario()
         
         if not ventas:
             return []
         
-        # Agrupar ventas por producto
-        productos = {}
+        # Rango real de fechas del periodo
+        fechas = [v.fecha_venta for v in ventas]
+        fecha_min = min(fechas)
+        fecha_max = max(fechas)
+        dias_periodo = max((fecha_max - fecha_min).days + 1, 1)
+        
+        # Agrupar ventas por producto y por día
+        productos: Dict[str, dict] = {}
         for v in ventas:
             if v.nombre not in productos:
                 productos[v.nombre] = {
                     "unidades_vendidas": 0,
-                    "total_ventas": 0,
+                    "total_ventas": 0.0,
                     "precio_compra": v.precio_promedio_compra,
-                    "precio_venta": 0,
                     "proveedor": v.proveedor_moda,
                     "familia": v.familia,
+                    "por_dia": {},  # fecha -> unidades
                 }
-            productos[v.nombre]["unidades_vendidas"] += v.cantidad
-            productos[v.nombre]["total_ventas"] += v.total_venta
-            productos[v.nombre]["precio_venta"] = v.precio  # último precio
+            prod = productos[v.nombre]
+            prod["unidades_vendidas"] += v.cantidad
+            prod["total_ventas"] += float(v.total_venta or 0)
+            prod["por_dia"].setdefault(v.fecha_venta, 0)
+            prod["por_dia"][v.fecha_venta] += v.cantidad
+
+        # Clasificación ABC por producto
+        mapa_abc = await self._get_clasificacion_abc_por_producto(filters)
         
-        sugerencias = []
+        sugerencias: List[SugerenciaCompraResponse] = []
         
         for nombre, data in productos.items():
-            # Venta diaria promedio
-            venta_diaria = data["unidades_vendidas"] / 30
+            unidades_vendidas = data["unidades_vendidas"]
+            if unidades_vendidas <= 0:
+                continue
+
+            # Venta diaria promedio basada en rango real
+            venta_diaria = unidades_vendidas / dias_periodo
             
+            # Serie diaria ordenada para calcular tendencia y variabilidad
+            dias_ordenados = sorted(data["por_dia"].keys())
+            serie = [data["por_dia"][d] for d in dias_ordenados]
+            n = len(serie)
+
+            # Tendencia (primera mitad vs segunda mitad)
+            if n >= 2:
+                mitad = n // 2
+                primera = np.mean(serie[:mitad])
+                segunda = np.mean(serie[mitad:])
+                if segunda > primera * 1.2:
+                    tendencia = "creciente"
+                elif segunda < primera * 0.8:
+                    tendencia = "decreciente"
+                else:
+                    tendencia = "estable"
+            else:
+                tendencia = "estable"
+
+            # Variabilidad (coeficiente de variación)
+            if n >= 2:
+                arr = np.array(serie, dtype=float)
+                media = float(np.mean(arr))
+                std = float(np.std(arr))
+                variabilidad = round(std / media, 3) if media > 0 else 0.0
+            else:
+                variabilidad = 0.0
+
             # Stock actual
             stock_actual = inventario.get(nombre, {}).get("cantidad_disponible", 0)
             
             # Días de stock
             dias_stock = stock_actual / venta_diaria if venta_diaria > 0 else 999
-            
-            # Cantidad sugerida (30 días + 20% margen de seguridad)
-            cantidad_sugerida = max(0, int((data["unidades_vendidas"] * 1.2) - stock_actual))
-            
+
+            # Cobertura objetivo según ABC
+            clasificacion_abc = mapa_abc.get(nombre) or "C"
+            if clasificacion_abc == "A":
+                cobertura_objetivo = 45
+            elif clasificacion_abc == "B":
+                cobertura_objetivo = 30
+            else:
+                cobertura_objetivo = 21
+
+            # Margen de seguridad según variabilidad (entre 10% y 40%)
+            margen_seguridad_factor = min(max(0.1 + variabilidad, 0.1), 0.4)
+            demanda_objetivo = venta_diaria * cobertura_objetivo * (1 + margen_seguridad_factor)
+
+            # Cantidad sugerida = demanda objetivo - stock actual
+            cantidad_sugerida = max(0, int(round(demanda_objetivo - stock_actual)))
             if cantidad_sugerida <= 0:
                 continue
             
-            # Precio de compra
+            # Precio de compra (de ventas o inventario)
             precio_compra = data["precio_compra"] or inventario.get(nombre, {}).get("precio", 0)
-            precio_venta = data["precio_venta"] or precio_compra * 1.3
             
             # Costo estimado
             costo_estimado = cantidad_sugerida * (precio_compra or 0)
             
-            # Prioridad
+            # Prioridad por días de stock
             if dias_stock <= 3:
                 prioridad = "🔴 Urgente"
             elif dias_stock <= 7:
@@ -105,231 +168,48 @@ class ComprasService:
                 prioridad = "🟡 Media"
             else:
                 prioridad = "🟢 Baja"
+
+            # ROI estimado (si tenemos margen unitario aproximado)
+            # Aproximamos margen como (precio_venta_promedio - precio_compra)
+            if unidades_vendidas > 0:
+                precio_venta_promedio = data["total_ventas"] / unidades_vendidas
+            else:
+                precio_venta_promedio = 0.0
+            margen_unitario = max(0.0, precio_venta_promedio - (precio_compra or 0))
+            roi_estimado = margen_unitario * cantidad_sugerida
             
-            sugerencias.append(SugerenciaCompraResponse(
-                nombre=nombre,
-                proveedor=data["proveedor"],
-                familia=data["familia"],
-                cantidad_disponible=int(stock_actual),
-                venta_diaria=round(venta_diaria, 1),
-                dias_stock=round(dias_stock, 1),
-                cantidad_sugerida=cantidad_sugerida,
-                precio_compra=precio_compra,
-                costo_estimado=round(costo_estimado, 2),
-                prioridad=prioridad,
-            ))
+            sugerencias.append(
+                SugerenciaCompraResponse(
+                    nombre=nombre,
+                    proveedor=data["proveedor"],
+                    familia=data["familia"],
+                    cantidad_disponible=int(stock_actual),
+                    venta_diaria=round(venta_diaria, 1),
+                    dias_stock=round(dias_stock, 1),
+                    cantidad_sugerida=cantidad_sugerida,
+                    precio_compra=precio_compra,
+                    costo_estimado=round(costo_estimado, 2),
+                    prioridad=prioridad,
+                    clasificacion_abc=clasificacion_abc,
+                    tendencia=tendencia,
+                    variabilidad=variabilidad,
+                    cobertura_objetivo_dias=cobertura_objetivo,
+                    roi_estimado=round(roi_estimado, 2),
+                    unidades_vendidas_periodo=unidades_vendidas,
+                )
+            )
         
-        # Ordenar por prioridad y días de stock
+        # Ordenar por prioridad y días de stock (y luego por ROI descendente)
         prioridad_orden = {"🔴 Urgente": 0, "🟠 Alta": 1, "🟡 Media": 2, "🟢 Baja": 3}
-        sugerencias.sort(key=lambda x: (prioridad_orden.get(x.prioridad, 4), x.dias_stock))
-        
-        return sugerencias
-    
-    async def get_resumen_completo(self, filters: FilterParams) -> Dict[str, Any]:
-        """Obtiene resumen completo con ROI, inversión total y productos agotados."""
-        sugerencias = await self.get_sugerencias(filters)
-        agotados = await self.get_productos_agotados()
-        
-        # Calcular totales
-        inversion_total = sum(s.costo_estimado for s in sugerencias)
-        
-        # Calcular ROI esperado (basado en margen promedio 25%)
-        margen_promedio = 0.25
-        ventas_esperadas = inversion_total * (1 + margen_promedio)
-        roi_esperado = (ventas_esperadas - inversion_total) / inversion_total * 100 if inversion_total > 0 else 0
-        
-        # Agrupar por proveedor
-        por_proveedor = {}
-        for s in sugerencias:
-            prov = s.proveedor or "Sin proveedor"
-            if prov not in por_proveedor:
-                por_proveedor[prov] = {
-                    "proveedor": prov,
-                    "productos": 0,
-                    "unidades": 0,
-                    "inversion": 0,
-                    "urgentes": 0,
-                    "altas": 0,
-                }
-            por_proveedor[prov]["productos"] += 1
-            por_proveedor[prov]["unidades"] += s.cantidad_sugerida
-            por_proveedor[prov]["inversion"] += s.costo_estimado
-            if s.prioridad == "🔴 Urgente":
-                por_proveedor[prov]["urgentes"] += 1
-            elif s.prioridad == "🟠 Alta":
-                por_proveedor[prov]["altas"] += 1
-        
-        # Ordenar proveedores por urgencia
-        proveedores_ordenados = sorted(
-            por_proveedor.values(),
-            key=lambda x: (-(x["urgentes"] * 1000 + x["altas"]), -x["inversion"])
+        sugerencias.sort(
+            key=lambda x: (
+                prioridad_orden.get(x.prioridad, 4),
+                x.dias_stock,
+                -(x.roi_estimado or 0),
+            )
         )
         
-        # Contar por prioridad
-        urgentes = [s for s in sugerencias if s.prioridad == "🔴 Urgente"]
-        altas = [s for s in sugerencias if s.prioridad == "🟠 Alta"]
-        medias = [s for s in sugerencias if s.prioridad == "🟡 Media"]
-        bajas = [s for s in sugerencias if s.prioridad == "🟢 Baja"]
-        
-        return {
-            "resumen": {
-                "total_productos": len(sugerencias),
-                "total_unidades": sum(s.cantidad_sugerida for s in sugerencias),
-                "inversion_total": round(inversion_total, 2),
-                "ventas_esperadas": round(ventas_esperadas, 2),
-                "roi_esperado": round(roi_esperado, 1),
-                "margen_promedio_usado": margen_promedio * 100,
-            },
-            "por_prioridad": {
-                "urgentes": {"count": len(urgentes), "inversion": round(sum(s.costo_estimado for s in urgentes), 2)},
-                "altas": {"count": len(altas), "inversion": round(sum(s.costo_estimado for s in altas), 2)},
-                "medias": {"count": len(medias), "inversion": round(sum(s.costo_estimado for s in medias), 2)},
-                "bajas": {"count": len(bajas), "inversion": round(sum(s.costo_estimado for s in bajas), 2)},
-            },
-            "por_proveedor": proveedores_ordenados[:15],  # Top 15
-            "agotados": agotados,
-            "sugerencias": [s.dict() for s in sugerencias],
-        }
-    
-    async def get_productos_agotados(self) -> Dict[str, Any]:
-        """Obtiene productos agotados en última semana y 2 semanas."""
-        query = """
-            WITH ventas_recientes AS (
-                SELECT 
-                    nombre,
-                    proveedor_moda as proveedor,
-                    familia,
-                    SUM(cantidad) as cantidad_vendida,
-                    SUM(precio * cantidad) as ingresos,
-                    MAX(fecha_venta) as ultima_venta,
-                    AVG(precio) as precio_promedio,
-                    SUM(cantidad) / 30.0 as venta_diaria
-                FROM reportes_ventas_30dias
-                GROUP BY nombre, proveedor_moda, familia
-            ),
-            stock_actual AS (
-                SELECT nombre, cantidad_disponible as stock FROM items
-            )
-            SELECT 
-                v.nombre, v.proveedor, v.familia,
-                COALESCE(s.stock, 0) as stock_actual,
-                v.cantidad_vendida, v.ingresos, v.ultima_venta,
-                v.precio_promedio, v.venta_diaria,
-                CASE 
-                    WHEN v.ultima_venta >= CURRENT_DATE - INTERVAL '7 days' THEN 'semana'
-                    WHEN v.ultima_venta >= CURRENT_DATE - INTERVAL '14 days' THEN '2semanas'
-                    ELSE 'antiguo'
-                END as periodo
-            FROM ventas_recientes v
-            LEFT JOIN stock_actual s ON v.nombre = s.nombre
-            WHERE COALESCE(s.stock, 0) <= 0 AND v.cantidad_vendida > 0
-            ORDER BY v.ultima_venta DESC
-        """
-        
-        try:
-            result = await self.db.execute(text(query))
-            rows = result.fetchall()
-            
-            semana = []
-            dos_semanas = []
-            
-            for row in rows:
-                d = row._asdict()
-                producto = {
-                    "nombre": d["nombre"],
-                    "proveedor": d["proveedor"],
-                    "familia": d["familia"],
-                    "ultima_venta": str(d["ultima_venta"]) if d["ultima_venta"] else None,
-                    "venta_diaria": round(float(d["venta_diaria"] or 0), 2),
-                    "cantidad_sugerida": max(1, int(float(d["venta_diaria"] or 0) * 15)),
-                    "ventas_perdidas": round(float(d["venta_diaria"] or 0) * float(d["precio_promedio"] or 0) * 7, 2),
-                }
-                if d["periodo"] == "semana":
-                    semana.append(producto)
-                elif d["periodo"] == "2semanas":
-                    dos_semanas.append(producto)
-            
-            return {
-                "ultima_semana": {
-                    "total": len(semana),
-                    "productos": semana[:20],
-                    "ventas_perdidas": round(sum(p["ventas_perdidas"] for p in semana), 2),
-                },
-                "ultimas_2_semanas": {
-                    "total": len(dos_semanas),
-                    "productos": dos_semanas[:20],
-                    "ventas_perdidas": round(sum(p["ventas_perdidas"] for p in dos_semanas), 2),
-                },
-            }
-        except Exception:
-            return {"ultima_semana": {"total": 0, "productos": []}, "ultimas_2_semanas": {"total": 0, "productos": []}}
-    
-    async def get_orden_proveedor(self, proveedor: str, filters: FilterParams) -> Dict[str, Any]:
-        """Genera orden de compra detallada para un proveedor específico."""
-        sugerencias = await self.get_sugerencias(filters)
-        
-        # Filtrar por proveedor
-        items = [s for s in sugerencias if (s.proveedor or "Sin proveedor") == proveedor]
-        
-        total_unidades = sum(s.cantidad_sugerida for s in items)
-        costo_total = sum(s.costo_estimado for s in items)
-        
-        # Calcular ROI para este proveedor
-        margen_promedio = 0.25
-        ventas_esperadas = costo_total * (1 + margen_promedio)
-        
-        return {
-            "proveedor": proveedor,
-            "fecha_generacion": str(date.today()),
-            "total_productos": len(items),
-            "total_unidades": total_unidades,
-            "inversion_total": round(costo_total, 2),
-            "ventas_esperadas": round(ventas_esperadas, 2),
-            "ganancia_esperada": round(ventas_esperadas - costo_total, 2),
-            "items": [
-                {
-                    "nombre": s.nombre,
-                    "familia": s.familia,
-                    "stock_actual": s.cantidad_disponible,
-                    "dias_stock": s.dias_stock,
-                    "cantidad": s.cantidad_sugerida,
-                    "precio_unitario": s.precio_compra,
-                    "subtotal": s.costo_estimado,
-                    "prioridad": s.prioridad,
-                }
-                for s in sorted(items, key=lambda x: x.dias_stock)
-            ],
-        }
-    
-    async def get_puntos_reorden(self, filters: FilterParams) -> List[Dict[str, Any]]:
-        """Calcula puntos de reorden para productos con alta rotación."""
-        sugerencias = await self.get_sugerencias(filters)
-        
-        puntos = []
-        for s in sugerencias:
-            if s.venta_diaria >= 0.5:  # Solo productos con ventas significativas
-                # Punto de reorden = venta diaria * lead time (7 días) + stock seguridad (3 días)
-                lead_time = 7
-                stock_seguridad = 3
-                punto_reorden = int(s.venta_diaria * (lead_time + stock_seguridad))
-                stock_objetivo = int(s.venta_diaria * 30)  # 30 días de stock
-                
-                puntos.append({
-                    "nombre": s.nombre,
-                    "proveedor": s.proveedor,
-                    "familia": s.familia,
-                    "stock_actual": s.cantidad_disponible,
-                    "venta_diaria": s.venta_diaria,
-                    "punto_reorden": punto_reorden,
-                    "stock_objetivo": stock_objetivo,
-                    "estado": "🔴 Por debajo" if s.cantidad_disponible < punto_reorden else "🟢 OK",
-                    "cantidad_pedir": max(0, stock_objetivo - s.cantidad_disponible),
-                })
-        
-        # Ordenar por estado (críticos primero)
-        puntos.sort(key=lambda x: (0 if x["estado"].startswith("🔴") else 1, -x["venta_diaria"]))
-        
-        return puntos[:100]  # Top 100
+        return sugerencias
     
     async def get_resumen_proveedores(self, filters: FilterParams) -> List[ResumenProveedorResponse]:
         """Obtiene resumen de compras por proveedor."""

@@ -123,10 +123,6 @@ export const apiService = {
 
   getMe: () => api.get<any>('/api/auth/me'),
 
-  // Dashboard
-  getDashboard: (filters: FilterParams) =>
-    api.get<DashboardData>('/api/dashboard', filters),
-
   getMetricas: (filters: FilterParams) =>
     api.get<Metricas>('/api/dashboard/metricas', filters),
 
@@ -177,6 +173,10 @@ export const apiService = {
   // Compras
   getSugerenciasCompra: (filters: FilterParams) =>
     api.get<any>('/api/compras/sugerencias', filters),
+
+  // Insights
+  getInsights: (filters: FilterParams) =>
+    api.get<any>('/api/insights', filters),
 
   // Export
   exportExcel: (filters: FilterParams) =>

@@ -5,7 +5,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routes import ventas_router, dashboard_router, vendedores_router, export_router
+from app.routes import (
+    ventas_router,
+    dashboard_router,
+    vendedores_router,
+    export_router,
+    insights_router,
+)
 from app.routes.auth import router as auth_router
 from app.routes.proveedores import router as proveedores_router
 
@@ -35,6 +41,7 @@ app.include_router(dashboard_router)
 app.include_router(vendedores_router)
 app.include_router(proveedores_router)
 app.include_router(export_router)
+app.include_router(insights_router)
 
 
 @app.get("/")

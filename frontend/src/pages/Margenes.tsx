@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ResponsiveBar } from '@nivo/bar';
-import { TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, Info } from 'lucide-react';
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -30,10 +30,7 @@ export function Margenes() {
   return (
     <div className="space-y-6">
       {/* Título */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold tracking-tight">Análisis de Márgenes</h1>
         <p className="text-muted-foreground">
           Rentabilidad por producto y familia
@@ -48,25 +45,37 @@ export function Margenes() {
           <Skeleton className="h-[400px]" />
           <Skeleton className="h-[400px]" />
         </div>
+      ) : data?.sin_datos_costo ? (
+        /* Mensaje cuando no hay datos de costo */
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-yellow-500/50">
+            <CardContent className="py-12">
+              <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                <Info className="h-12 w-12 text-yellow-500" />
+                <h3 className="text-lg font-semibold text-foreground">Sin datos de costo disponibles</h3>
+                <p className="text-center max-w-md">
+                  No se encontraron precios de compra en el período seleccionado.
+                  Para calcular márgenes, es necesario que los productos tengan un precio promedio de compra registrado.
+                </p>
+                <p className="text-xs text-center max-w-md">
+                  Intenta ampliar el rango de fechas o verificar que los proveedores tengan precios de compra actualizados.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       ) : data ? (
         <>
           {/* Resumen de márgenes */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
+          <div className="grid gap-4 md:grid-cols-4">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Margen Promedio
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Margen Promedio</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold">
-                      ${data.margen_promedio?.toFixed(2) || 0}
-                    </span>
+                    <span className="text-2xl font-bold">${data.margen_promedio?.toFixed(2) || 0}</span>
                     {(data.margen_promedio || 0) > 0 ? (
                       <TrendingUp className="h-5 w-5 text-green-500" />
                     ) : (
@@ -77,63 +86,101 @@ export function Margenes() {
               </Card>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Margen Generado
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Margen Generado</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className={cn(
-                    "text-2xl font-bold",
-                    (data.margen_total || 0) >= 0 ? "text-green-600" : "text-red-600"
-                  )}>
+                  <div className={cn("text-2xl font-bold", (data.margen_total || 0) >= 0 ? "text-green-600" : "text-red-600")}>
                     ${data.margen_total?.toLocaleString() || 0}
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Ventas Rentables / No Rentables
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Ventas con Margen Analizado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">${(data.ventas_con_margen_total || 0).toLocaleString()}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    % Margen global:{' '}
+                    <span className={cn(
+                      'font-semibold',
+                      data.ventas_con_margen_total > 0 && data.margen_total / data.ventas_con_margen_total * 100 > 0 ? 'text-green-600' : 'text-red-600'
+                    )}>
+                      {data.ventas_con_margen_total > 0 ? ((data.margen_total / data.ventas_con_margen_total) * 100).toFixed(1) : 0}%
+                    </span>
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Rentables / No Rentables</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-green-600">
-                      {data.ventas_rentables || 0}
-                    </span>
+                    <span className="text-2xl font-bold text-green-600">{data.ventas_rentables || 0}</span>
                     <span className="text-muted-foreground">/</span>
-                    <span className="text-2xl font-bold text-red-600">
-                      {data.ventas_no_rentables || 0}
-                    </span>
-                    {(data.ventas_no_rentables || 0) > 0 && (
-                      <AlertTriangle className="h-5 w-5 text-red-500" />
-                    )}
+                    <span className="text-2xl font-bold text-red-600">{data.ventas_no_rentables || 0}</span>
+                    {(data.ventas_no_rentables || 0) > 0 && <AlertTriangle className="h-5 w-5 text-red-500" />}
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
           </div>
 
+          {/* Márgenes por familia */}
+          {data.margenes_por_familia && data.margenes_por_familia.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Márgenes por Familia</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Familia</TableHead>
+                        <TableHead className="text-right">Ventas Totales</TableHead>
+                        <TableHead className="text-right">Margen Total</TableHead>
+                        <TableHead className="text-right">% Margen</TableHead>
+                        <TableHead className="text-right">Cantidad</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.margenes_por_familia.map((f: any, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{f.familia}</TableCell>
+                          <TableCell className="text-right">${Number(f.ventas_totales || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-right">
+                            <span className={cn((f.margen_total || 0) >= 0 ? 'text-green-600' : 'text-red-600', 'font-semibold')}>
+                              ${Number(f.margen_total || 0).toLocaleString()}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant={(f.margen_porcentaje || 0) >= 0 ? 'secondary' : 'destructive'}>
+                              {(f.margen_porcentaje || 0).toFixed(1)}%
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">{Number(f.cantidad_total || 0).toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
           {/* Gráfico de Top Márgenes */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -175,10 +222,7 @@ export function Margenes() {
                       tooltip={({ indexValue, value }) => (
                         <div className="bg-popover text-popover-foreground px-3 py-2 rounded-lg shadow-lg border">
                           <div className="font-medium">{indexValue}</div>
-                          <div className={cn(
-                            'font-bold',
-                            Number(value) >= 0 ? 'text-green-600' : 'text-red-600'
-                          )}>
+                          <div className={cn('font-bold', Number(value) >= 0 ? 'text-green-600' : 'text-red-600')}>
                             ${Number(value).toLocaleString()}
                           </div>
                         </div>
@@ -210,11 +254,7 @@ export function Margenes() {
           </motion.div>
 
           {/* Tabla de productos con peor margen */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -235,26 +275,18 @@ export function Margenes() {
                   <TableBody>
                     {data.bottom_margen?.slice(0, 10).map((producto: any, index: number) => (
                       <TableRow key={index}>
-                        <TableCell className="font-medium max-w-[200px] truncate">
-                          {producto.nombre}
-                        </TableCell>
+                        <TableCell className="font-medium max-w-[200px] truncate">{producto.nombre}</TableCell>
                         <TableCell className="text-right">
-                          <span className={cn(
-                            (producto.margen || 0) < 0 ? 'text-red-600' : 'text-green-600'
-                          )}>
+                          <span className={cn((producto.margen || 0) < 0 ? 'text-red-600' : 'text-green-600')}>
                             ${producto.margen?.toFixed(2) || 0}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Badge
-                            variant={(producto.total_margen || 0) < 0 ? 'destructive' : 'secondary'}
-                          >
+                          <Badge variant={(producto.total_margen || 0) < 0 ? 'destructive' : 'secondary'}>
                             ${producto.total_margen?.toLocaleString() || 0}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
-                          {producto.cantidad?.toLocaleString()}
-                        </TableCell>
+                        <TableCell className="text-right">{producto.cantidad?.toLocaleString()}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

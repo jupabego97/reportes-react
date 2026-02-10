@@ -50,17 +50,8 @@ export const queryKeys = {
   abc: (filters: FilterParams) => ['abc', filters] as const,
   rankingVendedores: (filters: FilterParams) => ['ranking-vendedores', filters] as const,
   sugerenciasCompra: (filters: FilterParams) => ['sugerencias-compra', filters] as const,
+  insights: (filters: FilterParams) => ['insights', filters] as const,
 };
-
-// Dashboard Hooks
-export function useDashboard() {
-  const filters = useFilterParams();
-  return useQuery({
-    queryKey: queryKeys.dashboard(filters),
-    queryFn: () => apiService.getDashboard(filters),
-    staleTime: 30000, // 30 segundos
-  });
-}
 
 export function useMetricas() {
   const filters = useFilterParams();
@@ -186,6 +177,15 @@ export function useSugerenciasCompra() {
   return useQuery({
     queryKey: queryKeys.sugerenciasCompra(filters),
     queryFn: () => apiService.getSugerenciasCompra(filters),
+    staleTime: 60000,
+  });
+}
+
+export function useInsights() {
+  const filters = useFilterParams();
+  return useQuery({
+    queryKey: queryKeys.insights(filters),
+    queryFn: () => apiService.getInsights(filters),
     staleTime: 60000,
   });
 }

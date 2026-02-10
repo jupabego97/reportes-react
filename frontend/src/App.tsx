@@ -12,10 +12,8 @@ import { AnalisisABC } from './pages/AnalisisABC';
 import { Vendedores } from './pages/Vendedores';
 import { Proveedores } from './pages/Proveedores';
 import { Compras } from './pages/Compras';
+import { Insights } from './pages/Insights';
 import { Datos } from './pages/Datos';
-import { Inventario } from './pages/Inventario';
-import { ProductoDetalle } from './pages/ProductoDetalle';
-import { CEODashboard } from './pages/CEODashboard';
 import { initializeTheme } from './stores/useThemeStore';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -68,15 +66,13 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="inventario" element={<Inventario />} />
-              <Route path="producto/:nombre" element={<ProductoDetalle />} />
-              <Route path="ejecutivo" element={<CEODashboard />} />
               <Route path="margenes" element={<Margenes />} />
               <Route path="predicciones" element={<Predicciones />} />
               <Route path="abc" element={<AnalisisABC />} />
               <Route path="vendedores" element={<Vendedores />} />
               <Route path="proveedores" element={<Proveedores />} />
               <Route path="compras" element={<Compras />} />
+              <Route path="insights" element={<Insights />} />
               <Route path="datos" element={<Datos />} />
             </Route>
 

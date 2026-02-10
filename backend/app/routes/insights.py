@@ -1,24 +1,35 @@
 """
-Rutas de insights.
+Rutas de insights inteligentes.
 """
-from fastapi import APIRouter, Depends
+from datetime import date
+from typing import Optional, Any, Dict
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.auth.dependencies import get_current_active_user
+from app.auth.models import User
+from app.models.schemas import FilterParams
+from app.services.ventas import VentasService
 from app.services.insights import InsightsService
-
-router = APIRouter(prefix="/api/insights", tags=["insights"])
-
-
-@router.get("")
-async def get_insights(db: AsyncSession = Depends(get_db)):
-    """Obtiene insights automáticos del negocio."""
-    service = InsightsService(db)
-    return await service.get_insights_dashboard()
+from app.routes.ventas import get_filter_params
 
 
-@router.get("/kpis")
-async def get_kpis_ejecutivo(db: AsyncSession = Depends(get_db)):
-    """Obtiene KPIs para dashboard ejecutivo."""
-    service = InsightsService(db)
-    return await service.get_kpis_ejecutivo()
+router = APIRouter(
+    prefix="/api/insights",
+    tags=["insights"],
+    dependencies=[Depends(get_current_active_user)],
+)
+
+
+@router.get("", response_model=dict)
+async def get_insights(
+    filters: FilterParams = Depends(get_filter_params),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Obtiene insights inteligentes cruzando ABC + inventario + tendencias."""
+    ventas_service = VentasService(db)
+    service = InsightsService(db, ventas_service)
+    return await service.get_insights(filters)
+

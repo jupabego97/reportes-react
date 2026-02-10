@@ -139,11 +139,17 @@ class MargenResponse(BaseModel):
     """Respuesta de análisis de márgenes."""
     margen_promedio: float
     margen_total: float
+    # Ventas totales sobre las que se pudo calcular margen
+    ventas_con_margen_total: float = 0
     ventas_rentables: int
     ventas_no_rentables: int
     datos_scatter: List[MargenProductoResponse]
     top_margen: List[dict]
     bottom_margen: List[dict]
+    # Indica que no hay datos de costo suficientes para calcular márgenes
+    sin_datos_costo: bool = False
+    # Márgenes agregados por familia: [{familia, margen_total, ventas_totales, margen_porcentaje}]
+    margenes_por_familia: List[dict] = []
 
 
 # =============================================================================
@@ -238,6 +244,13 @@ class SugerenciaCompraResponse(BaseModel):
     precio_compra: Optional[float]
     costo_estimado: float
     prioridad: str  # Urgente, Alta, Media, Baja
+    # Nuevos campos para inteligencia de inventario
+    clasificacion_abc: Optional[str] = None          # "A", "B", "C"
+    tendencia: Optional[str] = None                  # "creciente", "estable", "decreciente"
+    variabilidad: Optional[float] = None             # coeficiente de variación (0-1+)
+    cobertura_objetivo_dias: Optional[int] = None    # días de stock objetivo
+    roi_estimado: Optional[float] = None             # retorno estimado de la compra
+    unidades_vendidas_periodo: Optional[int] = None  # total vendido en el periodo
 
 
 class ResumenProveedorResponse(BaseModel):
