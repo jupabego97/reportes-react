@@ -18,6 +18,7 @@ import { useGenerarOrdenCompra, useResumenComprasProveedores, useSugerenciasComp
 import { formatCurrency, formatNumber } from '../lib/utils';
 
 const prioridadesAccionHoy = new Set(['🔴 Urgente', '🟠 Alta']);
+type VentanaDecision = 'hoy' | '48h' | '7d';
 
 type OrdenCompra = {
   proveedor: string;
@@ -38,13 +39,26 @@ export function CentroDecisiones() {
   const { data: resumenProveedores } = useResumenComprasProveedores();
   const generarOrden = useGenerarOrdenCompra();
   const [ordenActual, setOrdenActual] = useState<OrdenCompra | null>(null);
+  const [ventana, setVentana] = useState<VentanaDecision>('hoy');
+
+  const umbralDias = useMemo(() => {
+    if (ventana === 'hoy') return 1;
+    if (ventana === '48h') return 2;
+    return 7;
+  }, [ventana]);
+
+  const tituloVentana = useMemo(() => {
+    if (ventana === 'hoy') return 'Comprar Hoy';
+    if (ventana === '48h') return 'Comprar en 48h';
+    return 'Comprar en 7 dias';
+  }, [ventana]);
 
   const comprarHoy = useMemo(() => {
     const rows = Array.isArray(sugerencias) ? sugerencias : [];
     return rows
-      .filter((s: any) => prioridadesAccionHoy.has(s.prioridad) || (s.dias_stock ?? 999) <= 7)
+      .filter((s: any) => prioridadesAccionHoy.has(s.prioridad) || (s.dias_stock ?? 999) <= umbralDias)
       .sort((a: any, b: any) => (a.dias_stock ?? 999) - (b.dias_stock ?? 999));
-  }, [sugerencias]);
+  }, [sugerencias, umbralDias]);
 
   const proveedoresUrgentes = useMemo(() => {
     const map = new Map<string, { proveedor: string; productos: number; unidades: number; costo: number }>();
@@ -65,6 +79,46 @@ export function CentroDecisiones() {
   }, [comprarHoy]);
 
   const inversionHoy = comprarHoy.reduce((acc, s: any) => acc + Number(s.costo_estimado || 0), 0);
+
+  const handleExportarOrdenCSV = () => {
+    if (!ordenActual) return;
+
+    const encabezado = [
+      ['Proveedor', ordenActual.proveedor],
+      ['Fecha', ordenActual.fecha],
+      ['Total productos', String(ordenActual.total_productos || 0)],
+      ['Total unidades', String(ordenActual.total_unidades || 0)],
+      ['Costo total', String(ordenActual.costo_total || 0)],
+      [],
+      ['Item', 'Prioridad', 'Cantidad', 'Costo estimado'],
+    ];
+
+    const filas = (ordenActual.items || []).map((item) => [
+      item.nombre,
+      item.prioridad,
+      String(item.cantidad_sugerida || 0),
+      String(item.costo_estimado || 0),
+    ]);
+
+    const csv = [...encabezado, ...filas]
+      .map((row) =>
+        row
+          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+          .join(',')
+      )
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const proveedorSafe = (ordenActual.proveedor || 'proveedor').replace(/[^\w-]+/g, '_');
+    a.href = url;
+    a.download = `orden_compra_${proveedorSafe}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const handleGenerarOrden = async (proveedor: string) => {
     if (proveedor === 'Sin proveedor') return;
@@ -110,7 +164,7 @@ export function CentroDecisiones() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                   <Target className="h-4 w-4" />
-                  Comprar Hoy
+                  {tituloVentana}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -136,12 +190,12 @@ export function CentroDecisiones() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
                   <ClipboardList className="h-4 w-4" />
-                  Inversion Recomendada Hoy
+                  Inversion Recomendada
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-primary">{formatCurrency(inversionHoy)}</div>
-                <p className="text-xs text-muted-foreground">Suma de urgentes y altas</p>
+                <p className="text-xs text-muted-foreground">Suma de items para la ventana activa</p>
               </CardContent>
             </Card>
           </div>
@@ -151,10 +205,33 @@ export function CentroDecisiones() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-red-600" />
-                  Comprar Hoy (momento justo)
+                  {tituloVentana} (momento justo)
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <Button
+                    size="sm"
+                    variant={ventana === 'hoy' ? 'default' : 'outline'}
+                    onClick={() => setVentana('hoy')}
+                  >
+                    Hoy
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={ventana === '48h' ? 'default' : 'outline'}
+                    onClick={() => setVentana('48h')}
+                  >
+                    48h
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={ventana === '7d' ? 'default' : 'outline'}
+                    onClick={() => setVentana('7d')}
+                  >
+                    7 dias
+                  </Button>
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -226,7 +303,12 @@ export function CentroDecisiones() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card>
                 <CardHeader>
-                  <CardTitle>Orden sugerida: {ordenActual.proveedor}</CardTitle>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <CardTitle>Orden sugerida: {ordenActual.proveedor}</CardTitle>
+                    <Button variant="outline" onClick={handleExportarOrdenCSV}>
+                      Exportar orden CSV
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="grid gap-3 md:grid-cols-3">
