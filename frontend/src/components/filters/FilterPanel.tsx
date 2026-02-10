@@ -9,12 +9,10 @@ import { MultiSelect } from '../ui/multi-select';
 import { Slider } from '../ui/slider';
 import { useFiltersStore } from '../../stores/useFiltersStore';
 import { useFiltrosOpciones } from '../../hooks/useApi';
-// cn import removed - not used
-
 export function FilterPanel() {
   const [isExpanded, setIsExpanded] = useState(false);
   const { data: opciones } = useFiltrosOpciones();
-
+  
   const {
     fechaInicio,
     fechaFin,
@@ -264,4 +262,5 @@ export function FilterPanel() {
     </Card>
   );
 }
+
 

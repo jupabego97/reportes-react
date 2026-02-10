@@ -15,14 +15,13 @@ import {
 
 const routeNames: Record<string, string> = {
   '': 'Dashboard',
-  'ejecutivo': 'Ejecutivo',
-  'inventario': 'Inventario',
-  'margenes': 'Análisis de Márgenes',
+  'margenes': 'Analisis de Margenes',
   'predicciones': 'Predicciones',
-  'abc': 'Análisis ABC',
+  'abc': 'Analisis ABC',
   'vendedores': 'Ranking de Vendedores',
-  'proveedores': 'Análisis de Proveedores',
+  'proveedores': 'Analisis de Proveedores',
   'compras': 'Sugerencias de Compra',
+  'insights': 'Insights de Inventario',
   'datos': 'Datos Detallados',
 };
 
@@ -46,10 +45,8 @@ export function Header({ children }: HeaderProps) {
     <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 md:px-6">
       {/* Left side: Mobile menu + Breadcrumbs */}
       <div className="flex items-center gap-2">
-        {/* Mobile menu button slot */}
         {children}
 
-        {/* Breadcrumbs - hidden on mobile, simplified */}
         <nav className="hidden sm:flex items-center space-x-1 text-sm text-muted-foreground">
           {breadcrumbs.map((crumb, index) => (
             <div key={crumb.href} className="flex items-center">
@@ -75,7 +72,6 @@ export function Header({ children }: HeaderProps) {
           ))}
         </nav>
 
-        {/* Mobile: Show current page name only */}
         <span className="sm:hidden text-sm font-medium text-foreground truncate max-w-[150px]">
           {breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 1].name : 'Dashboard'}
         </span>
@@ -83,7 +79,6 @@ export function Header({ children }: HeaderProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-1 md:gap-2">
-        {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative h-9 w-9">
@@ -97,27 +92,26 @@ export function Header({ children }: HeaderProps) {
             <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-              <span className="font-medium text-red-600">⚠️ Margen Negativo</span>
+              <span className="font-medium text-red-600">Margen Negativo</span>
               <span className="text-xs text-muted-foreground">
                 3 productos con margen negativo detectados
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-              <span className="font-medium text-yellow-600">📉 Stock Bajo</span>
+              <span className="font-medium text-yellow-600">Stock Bajo</span>
               <span className="text-xs text-muted-foreground">
-                5 productos necesitan reposición
+                5 productos necesitan reposicion
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-              <span className="font-medium text-blue-600">📊 Meta Alcanzada</span>
+              <span className="font-medium text-blue-600">Meta Alcanzada</span>
               <span className="text-xs text-muted-foreground">
-                Vendedor Juan superó su meta mensual
+                Vendedor Juan supero su meta mensual
               </span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Theme Toggle */}
         <ThemeToggle />
       </div>
     </header>

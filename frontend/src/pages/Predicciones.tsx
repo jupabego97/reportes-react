@@ -56,16 +56,17 @@ export function Predicciones() {
     fecha: p.fecha,
   })) || [];
 
-  // Banda de confianza (comentada - no usada directamente)
-  // const confianzaData = data?.predicciones?.map((p: any, idx: number) => {
-  //   const upper = data.predicciones_upper?.[idx] || p.ventas * 1.2;
-  //   const lower = data.predicciones_lower?.[idx] || p.ventas * 0.8;
-  //   return {
-  //     x: formatDate(p.fecha),
-  //     y: upper,
-  //     y0: lower,
-  //   };
-  // }) || [];
+  // Banda de confianza
+  const _confianzaData = data?.predicciones?.map((p: any, idx: number) => {
+    const upper = data.predicciones_upper?.[idx] || p.ventas * 1.2;
+    const lower = data.predicciones_lower?.[idx] || p.ventas * 0.8;
+    return {
+      x: formatDate(p.fecha),
+      y: upper,
+      y0: lower,
+    };
+  }) || [];
+  void _confianzaData; // reserved for future chart use
 
   // Datos para el gráfico de estacionalidad
   const estacionalidadData = data?.ventas_por_dia_semana?.map((v: any) => ({
@@ -75,14 +76,14 @@ export function Predicciones() {
 
   // Ordenar días de la semana
   const ordenDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-  const estacionalidadOrdenada = ordenDias.map(dia =>
+  const estacionalidadOrdenada = ordenDias.map(dia => 
     estacionalidadData.find((d: any) => d.dia === dia) || { dia, promedio: 0 }
   );
 
   const tieneDatosSuficientes = data?.historico && data.historico.length >= 7;
-  const tendenciaTexto = data?.tendencia_diaria
-    ? data.tendencia_diaria > 0
-      ? `+$${data.tendencia_diaria.toFixed(2)}/día`
+  const tendenciaTexto = data?.tendencia_diaria 
+    ? data.tendencia_diaria > 0 
+      ? `+$${data.tendencia_diaria.toFixed(2)}/día` 
       : `$${data.tendencia_diaria.toFixed(2)}/día`
     : 'N/A';
 
@@ -141,9 +142,10 @@ export function Predicciones() {
                     ${data.venta_diaria_promedio?.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                   </div>
                   {data.tendencia_diaria !== undefined && (
-                    <p className={`text-xs mt-1 ${data.tendencia_diaria > 0 ? 'text-green-600' :
-                        data.tendencia_diaria < 0 ? 'text-red-600' : 'text-muted-foreground'
-                      }`}>
+                    <p className={`text-xs mt-1 ${
+                      data.tendencia_diaria > 0 ? 'text-green-600' : 
+                      data.tendencia_diaria < 0 ? 'text-red-600' : 'text-muted-foreground'
+                    }`}>
                       Tendencia: {tendenciaTexto}
                     </p>
                   )}
