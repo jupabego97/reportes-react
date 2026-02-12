@@ -67,7 +67,7 @@ export function Compras() {
   }, [sugerencias, busqueda]);
 
   const handleExportarCSV = () => {
-    const headers = ['Prioridad', 'Producto', 'ABC', 'Tendencia', 'Familia', 'Proveedor', 'Stock', 'Venta/dia', 'Dias stock', 'ROP', 'Sugerido', 'ROI Est.'];
+    const headers = ['Prioridad', 'Producto', 'ABC', 'Tendencia', 'Familia', 'Proveedor', 'Stock', 'Venta/dia', 'Demanda proy. 7d', 'Dias stock', 'ROP', 'Sugerido', 'ROI Est.'];
     const rows = sugerencias.map((p: any) => [
       p.prioridad || '',
       p.nombre || '',
@@ -77,6 +77,7 @@ export function Compras() {
       p.proveedor || '',
       String(p.cantidad_disponible || 0),
       String(p.venta_diaria || 0),
+      String(p.demanda_proyectada_7d ?? ''),
       String(p.dias_stock?.toFixed(0) || 0),
       String(p.punto_reorden ?? ''),
       String(p.cantidad_sugerida || 0),
@@ -296,6 +297,10 @@ export function Compras() {
                       <TableHead className="text-right">Stock</TableHead>
                       <TableHead className="text-right">Venta/dia</TableHead>
                       <TableHead className="text-right">
+                        Dem. proy. 7d
+                        <MetricTooltip text="Demanda proyectada (unidades) para los proximos 7 dias segun forecast. Cuando disponible, la sugerencia usa esta proyeccion en lugar del historico." />
+                      </TableHead>
+                      <TableHead className="text-right">
                         Dias stock
                         <MetricTooltip text="Stock actual / venta diaria promedio (ultimos 30 dias). Indica cuantos dias dura el inventario actual al ritmo de venta actual." />
                       </TableHead>
@@ -329,6 +334,9 @@ export function Compras() {
                             </span>
                           </TableCell>
                           <TableCell className="text-right">{producto.venta_diaria}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {producto.demanda_proyectada_7d != null ? producto.demanda_proyectada_7d.toFixed(0) : '-'}
+                          </TableCell>
                           <TableCell className="text-right">
                             <span className={cn(
                               producto.dias_stock <= 7 && 'text-red-600',

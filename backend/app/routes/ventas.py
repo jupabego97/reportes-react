@@ -16,11 +16,19 @@ from app.models.schemas import (
     FiltrosOpciones,
     MargenResponse,
     PrediccionResponse,
+    PrediccionDesgloseResponse,
 )
 from app.services.ventas import VentasService
 from app.services.margenes import MargenesService
 from app.services.predicciones import PrediccionesService
 from app.services.abc import ABCService
+from app.cache import (
+    PREDICCIONES_CACHE,
+    PREDICCIONES_DESGLOSE_CACHE,
+    _cache_key,
+    get_cached,
+    set_cached,
+)
 
 router = APIRouter(prefix="/api", tags=["ventas"], dependencies=[Depends(get_current_active_user)])
 
@@ -159,10 +167,48 @@ async def get_predicciones(
     filters: FilterParams = Depends(get_filter_params),
     db: AsyncSession = Depends(get_db),
 ):
-    """Obtiene predicciones de ventas."""
+    """Obtiene predicciones de ventas (nivel global). Cache TTL 15 min."""
+    key = _cache_key("pred", filters)
+    cached = get_cached(PREDICCIONES_CACHE, key)
+    if cached is not None:
+        return cached
     ventas_service = VentasService(db)
     service = PrediccionesService(ventas_service)
-    return await service.get_predicciones(filters)
+    result = await service.get_predicciones(filters)
+    set_cached(PREDICCIONES_CACHE, key, result)
+    return result
+
+
+@router.get("/predicciones/desglose", response_model=PrediccionDesgloseResponse)
+async def get_predicciones_desglose(
+    nivel: str = Query("familia", description="Agrupación: familia o producto"),
+    filters: FilterParams = Depends(get_filter_params),
+    db: AsyncSession = Depends(get_db),
+):
+    """Predicciones desglosadas por familia o producto. Cache TTL 15 min."""
+    if nivel not in ("familia", "producto"):
+        nivel = "familia"
+    key = _cache_key("pred_desglose", filters, nivel)
+    cached = get_cached(PREDICCIONES_DESGLOSE_CACHE, key)
+    if cached is not None:
+        return cached
+    ventas_service = VentasService(db)
+    service = PrediccionesService(ventas_service)
+    result = await service.get_predicciones_desglose(filters, nivel)
+    set_cached(PREDICCIONES_DESGLOSE_CACHE, key, result)
+    return result
+
+
+@router.get("/predicciones/backtest")
+async def get_predicciones_backtest(
+    semanas: int = Query(8, ge=2, le=12, description="Semanas para walk-forward validation"),
+    filters: FilterParams = Depends(get_filter_params),
+    db: AsyncSession = Depends(get_db),
+):
+    """Backtesting rolling: WAPE/MAPE sobre últimas N semanas."""
+    ventas_service = VentasService(db)
+    service = PrediccionesService(ventas_service)
+    return await service.get_backtest_metricas(filters, semanas)
 
 
 @router.get("/abc")

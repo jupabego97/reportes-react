@@ -174,6 +174,27 @@ class PrediccionResponse(BaseModel):
     predicciones_upper: List[float]
     predicciones_lower: List[float]
     ventas_por_dia_semana: List[dict]
+    mape: Optional[float] = None  # Mean Absolute Percentage Error (ajuste in-sample)
+    wape: Optional[float] = None  # Weighted Absolute Percentage Error (ajuste in-sample)
+
+
+class PrediccionGrupoResponse(BaseModel):
+    """Predicción para un grupo (familia o producto)."""
+    venta_diaria_promedio: float
+    prediccion_semanal: float
+    prediccion_mensual: float
+    predicciones: List[VentaDiariaResponse]
+    predicciones_upper: List[float]
+    predicciones_lower: List[float]
+    mape: Optional[float] = None
+    wape: Optional[float] = None
+    fallback_usado: bool = False  # True si se usó forecast global por insuficiente data
+
+
+class PrediccionDesgloseResponse(BaseModel):
+    """Predicciones desglosadas por familia o producto."""
+    nivel: str  # "familia" | "producto"
+    grupos: dict  # { nombre_grupo: PrediccionGrupoResponse }
 
 
 # =============================================================================
@@ -252,6 +273,7 @@ class SugerenciaCompraResponse(BaseModel):
     roi_estimado: Optional[float] = None             # retorno estimado de la compra
     unidades_vendidas_periodo: Optional[int] = None  # total vendido en el periodo
     punto_reorden: Optional[int] = None              # ROP = venta_diaria * lead_time + safety_stock
+    demanda_proyectada_7d: Optional[float] = None     # demanda promedio próximos 7d desde forecast
 
 
 class ResumenProveedorResponse(BaseModel):

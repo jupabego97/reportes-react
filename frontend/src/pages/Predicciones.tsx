@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { ResponsiveLine } from '@nivo/line';
 import { ResponsiveBar } from '@nivo/bar';
-import { TrendingUp, Calendar, Target, AlertCircle } from 'lucide-react';
+import { TrendingUp, Calendar, Target, AlertCircle, BarChart3 } from 'lucide-react';
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
@@ -56,17 +56,17 @@ export function Predicciones() {
     fecha: p.fecha,
   })) || [];
 
-  // Banda de confianza
-  const _confianzaData = data?.predicciones?.map((p: any, idx: number) => {
-    const upper = data.predicciones_upper?.[idx] || p.ventas * 1.2;
-    const lower = data.predicciones_lower?.[idx] || p.ventas * 0.8;
+  // Banda de confianza (upper/lower para gráfico)
+  const confianzaData = data?.predicciones?.map((p: any, idx: number) => {
+    const upper = data.predicciones_upper?.[idx] ?? p.ventas * 1.2;
+    const lower = data.predicciones_lower?.[idx] ?? Math.max(0, p.ventas * 0.8);
     return {
       x: formatDate(p.fecha),
       y: upper,
       y0: lower,
+      fecha: p.fecha,
     };
   }) || [];
-  void _confianzaData; // reserved for future chart use
 
   // Datos para el gráfico de estacionalidad
   const estacionalidadData = data?.ventas_por_dia_semana?.map((v: any) => ({
@@ -125,7 +125,7 @@ export function Predicciones() {
           )}
 
           {/* Métricas de predicción */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -198,6 +198,41 @@ export function Predicciones() {
                 </CardContent>
               </Card>
             </motion.div>
+            {(data.mape != null || data.wape != null) && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+              >
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      Calidad del modelo
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-4 text-sm">
+                      {data.mape != null && (
+                        <div>
+                          <span className="text-muted-foreground">MAPE: </span>
+                          <span className="font-semibold">{data.mape}%</span>
+                        </div>
+                      )}
+                      {data.wape != null && (
+                        <div>
+                          <span className="text-muted-foreground">WAPE: </span>
+                          <span className="font-semibold">{data.wape}%</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Error in-sample (ajuste histórico)
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
           </div>
 
           {/* Gráfico de tendencia con predicción */}
@@ -210,7 +245,7 @@ export function Predicciones() {
               <CardHeader>
                 <CardTitle>📊 Tendencia y Proyección</CardTitle>
                 <CardDescription>
-                  Ventas históricas, media móvil de 7 días y predicciones con banda de confianza (±20%)
+                  Ventas históricas, media móvil de 7 días y predicciones con banda de confianza basada en desviación histórica
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -238,6 +273,45 @@ export function Predicciones() {
                       xScale={{ type: 'point' }}
                       yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
                       curve="monotoneX"
+                      layers={[
+                        'grid',
+                        'axes',
+                        (layerProps: any) => {
+                          if (confianzaData.length === 0) return null;
+                          const { xScale, yScale } = layerProps;
+                          const points = confianzaData
+                            .map((d: { x: string; y: number; y0: number }) => {
+                              const x = xScale(d.x);
+                              const yUpper = yScale(d.y);
+                              const yLower = yScale(d.y0);
+                              return { x: Number(x), yUpper: Number(yUpper), yLower: Number(yLower) };
+                            })
+                            .filter((p: { x: number; yUpper: number; yLower: number }) => !Number.isNaN(p.x) && !Number.isNaN(p.yUpper));
+                          if (points.length < 2) return null;
+                          const d = points
+                            .map((p: { x: number; yUpper: number }, i: number) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.yUpper}`)
+                            .join(' ') +
+                            ' ' +
+                            points
+                              .slice()
+                              .reverse()
+                              .map((p: { x: number; yLower: number }, i: number) => `${i === 0 ? 'L' : 'L'} ${p.x} ${p.yLower}`)
+                              .join(' ') +
+                            ' Z';
+                          return (
+                            <path
+                              d={d}
+                              fill="hsl(142, 71%, 45%)"
+                              fillOpacity={0.2}
+                              strokeWidth={0}
+                            />
+                          );
+                        },
+                        'lines',
+                        'points',
+                        'mesh',
+                        'legends',
+                      ]}
                       axisBottom={{
                         tickSize: 5,
                         tickPadding: 5,
@@ -316,11 +390,11 @@ export function Predicciones() {
                     </div>
                   )}
                 </div>
-                {tieneDatosSuficientes && prediccionesData.length > 0 && (
-                  <div className="mt-4 text-sm text-muted-foreground">
+                {tieneDatosSuficientes && prediccionesData.length > 0 && confianzaData.length > 0 && (
+                  <div className="mt-4 text-sm text-muted-foreground flex items-center gap-4">
                     <p>
-                      <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                      Las predicciones incluyen una banda de confianza del ±20% basada en la variabilidad histórica.
+                      <span className="inline-block w-3 h-3 rounded-sm bg-green-500/30 mr-2 align-middle"></span>
+                      Banda de confianza: rango probable según desviación estándar histórica de residuos.
                     </p>
                   </div>
                 )}

@@ -16,14 +16,27 @@ from app.models.schemas import (
 )
 from app.services.ventas import VentasService
 from app.services.abc import ABCService
+from app.services.predicciones import PrediccionesService
 
 
 class ComprasService:
     """Servicio para sugerencias de compras."""
     
-    def __init__(self, db: AsyncSession, ventas_service: VentasService):
+    def __init__(
+        self,
+        db: AsyncSession,
+        ventas_service: VentasService,
+        predicciones_service: Optional[PrediccionesService] = None,
+        lead_time_por_proveedor: Optional[Dict[str, int]] = None,
+        lead_time_default: int = 7,
+        safety_dias_base: int = 3,
+    ):
         self.db = db
         self.ventas_service = ventas_service
+        self.predicciones_service = predicciones_service
+        self.lead_time_por_proveedor = lead_time_por_proveedor or {}
+        self.lead_time_default = lead_time_default
+        self.safety_dias_base = safety_dias_base
     
     async def get_inventario(self) -> dict:
         """Obtiene datos de inventario desde la tabla items."""
@@ -91,7 +104,17 @@ class ComprasService:
 
         # Clasificación ABC por producto
         mapa_abc = await self._get_clasificacion_abc_por_producto(filters)
-        
+
+        # Forecast por producto (si disponible): venta_diaria_promedio en $ por día
+        forecast_diario_por_producto: Dict[str, float] = {}
+        if self.predicciones_service:
+            try:
+                desglose = await self.predicciones_service.get_predicciones_desglose(filters, "producto")
+                for nombre_prod, grupo in desglose.grupos.items():
+                    forecast_diario_por_producto[nombre_prod] = grupo.venta_diaria_promedio
+            except Exception:
+                pass
+
         sugerencias: List[SugerenciaCompraResponse] = []
         
         for nombre, data in productos.items():
@@ -99,8 +122,18 @@ class ComprasService:
             if unidades_vendidas <= 0:
                 continue
 
-            # Venta diaria promedio basada en rango real
-            venta_diaria = unidades_vendidas / dias_periodo
+            # Venta diaria histórica (unidades/día)
+            venta_diaria_historica = unidades_vendidas / dias_periodo
+            venta_diaria_ventas_historica = data["total_ventas"] / dias_periodo if dias_periodo > 0 else 0
+
+            # Usar demanda proyectada si hay forecast (escalamos unidades por ratio $ proyectado/$ histórico)
+            venta_diaria = venta_diaria_historica
+            demanda_proyectada_7d: Optional[float] = None
+            forecast_ventas = forecast_diario_por_producto.get(nombre)
+            if forecast_ventas is not None and forecast_ventas > 0 and venta_diaria_ventas_historica > 0:
+                factor = forecast_ventas / venta_diaria_ventas_historica
+                venta_diaria = venta_diaria_historica * factor
+                demanda_proyectada_7d = round(venta_diaria * 7, 1)
             
             # Serie diaria ordenada para calcular tendencia y variabilidad
             dias_ordenados = sorted(data["por_dia"].keys())
@@ -170,10 +203,12 @@ class ComprasService:
             else:
                 prioridad = "🟢 Baja"
 
-            # Punto de reorden (ROP) = venta_diaria * lead_time + safety_stock
-            # lead_time default 7 dias, safety_stock = 3 dias * (1 + variabilidad)
-            lead_time_dias = 7
-            safety_dias = 3 * (1 + min(variabilidad, 1.0))  # 3-6 dias segun variabilidad
+            # Punto de reorden (ROP) = venta_diaria * (lead_time + safety_stock_dias)
+            proveedor_key = data["proveedor"] or ""
+            lead_time_dias = self.lead_time_por_proveedor.get(
+                proveedor_key, self.lead_time_default
+            )
+            safety_dias = self.safety_dias_base * (1 + min(variabilidad, 1.0))
             punto_reorden = int(round(venta_diaria * (lead_time_dias + safety_dias)))
 
             # ROI estimado (si tenemos margen unitario aproximado)
@@ -204,6 +239,7 @@ class ComprasService:
                     roi_estimado=round(roi_estimado, 2),
                     unidades_vendidas_periodo=unidades_vendidas,
                     punto_reorden=punto_reorden,
+                    demanda_proyectada_7d=demanda_proyectada_7d,
                 )
             )
         

@@ -142,6 +142,8 @@ export interface PrediccionResponse {
   predicciones_upper: number[];
   predicciones_lower: number[];
   ventas_por_dia_semana: { dia: string; promedio: number }[];
+  mape?: number;
+  wape?: number;
 }
 
 // ABC
