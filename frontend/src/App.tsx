@@ -15,6 +15,8 @@ import { Proveedores } from './pages/Proveedores';
 import { Compras } from './pages/Compras';
 import { Insights } from './pages/Insights';
 import { Datos } from './pages/Datos';
+import { FacturasProveedor } from './pages/FacturasProveedor';
+import { ProductoDetalle } from './pages/ProductoDetalle';
 import { initializeTheme } from './stores/useThemeStore';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -74,8 +76,10 @@ function App() {
               <Route path="vendedores" element={<Vendedores />} />
               <Route path="proveedores" element={<Proveedores />} />
               <Route path="compras" element={<Compras />} />
+              <Route path="facturas" element={<FacturasProveedor />} />
               <Route path="insights" element={<Insights />} />
               <Route path="datos" element={<Datos />} />
+              <Route path="producto/:nombre" element={<ProductoDetalle />} />
             </Route>
 
             {/* Redirección por defecto */}

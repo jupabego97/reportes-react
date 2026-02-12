@@ -251,6 +251,7 @@ class SugerenciaCompraResponse(BaseModel):
     cobertura_objetivo_dias: Optional[int] = None    # días de stock objetivo
     roi_estimado: Optional[float] = None             # retorno estimado de la compra
     unidades_vendidas_periodo: Optional[int] = None  # total vendido en el periodo
+    punto_reorden: Optional[int] = None              # ROP = venta_diaria * lead_time + safety_stock
 
 
 class ResumenProveedorResponse(BaseModel):

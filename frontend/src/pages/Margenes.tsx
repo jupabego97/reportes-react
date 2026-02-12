@@ -18,6 +18,7 @@ import {
 import { useMargenes } from '../hooks/useApi';
 import { cn, exportToCSV } from '../lib/utils';
 import { MetricTooltip } from '../components/ui/metric-tooltip';
+import { ProductLink } from '../components/ProductLink';
 
 export function Margenes() {
   const { data, isLoading, error } = useMargenes();
@@ -300,7 +301,7 @@ export function Margenes() {
                   <TableBody>
                     {data.bottom_margen?.slice(0, 10).map((producto: any, index: number) => (
                       <TableRow key={index}>
-                        <TableCell className="font-medium max-w-[200px] truncate" title={producto.nombre}>{producto.nombre}</TableCell>
+                        <TableCell className="max-w-[200px]"><ProductLink nombre={producto.nombre} className="truncate block" /></TableCell>
                         <TableCell className="text-right">
                           <span className={cn((producto.margen || 0) < 0 ? 'text-red-600' : 'text-green-600')}>
                             ${producto.margen?.toFixed(2) || 0}

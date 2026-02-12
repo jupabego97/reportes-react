@@ -19,6 +19,7 @@ import {
 import { useSugerenciasCompra } from '../hooks/useApi';
 import { cn, exportToCSV } from '../lib/utils';
 import { MetricTooltip } from '../components/ui/metric-tooltip';
+import { ProductLink } from '../components/ProductLink';
 
 // Mapeo de prioridades del backend a estilos del frontend
 const prioridadConfig: Record<string, { color: 'destructive' | 'secondary' | 'outline' | 'default'; icon: string; label: string }> = {
@@ -66,7 +67,7 @@ export function Compras() {
   }, [sugerencias, busqueda]);
 
   const handleExportarCSV = () => {
-    const headers = ['Prioridad', 'Producto', 'ABC', 'Tendencia', 'Familia', 'Proveedor', 'Stock', 'Venta/dia', 'Dias stock', 'Sugerido', 'ROI Est.'];
+    const headers = ['Prioridad', 'Producto', 'ABC', 'Tendencia', 'Familia', 'Proveedor', 'Stock', 'Venta/dia', 'Dias stock', 'ROP', 'Sugerido', 'ROI Est.'];
     const rows = sugerencias.map((p: any) => [
       p.prioridad || '',
       p.nombre || '',
@@ -77,6 +78,7 @@ export function Compras() {
       String(p.cantidad_disponible || 0),
       String(p.venta_diaria || 0),
       String(p.dias_stock?.toFixed(0) || 0),
+      String(p.punto_reorden ?? ''),
       String(p.cantidad_sugerida || 0),
       String(p.roi_estimado || 0),
     ]);
@@ -194,7 +196,7 @@ export function Compras() {
                       .map((producto: any, index: number) => (
                         <motion.div key={producto.nombre} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 * index }} className="p-4 rounded-lg border bg-red-500/5 border-red-500/20">
                           <div className="flex items-center justify-between">
-                            <div className="font-medium truncate flex-1">{producto.nombre}</div>
+                            <div className="font-medium truncate flex-1"><ProductLink nombre={producto.nombre} /></div>
                             <AbcBadge abc={producto.clasificacion_abc} />
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
@@ -237,7 +239,7 @@ export function Compras() {
                       .slice(0, 10)
                       .map((p: any, i: number) => (
                         <TableRow key={i}>
-                          <TableCell className="font-medium max-w-[200px] truncate" title={p.nombre}>{p.nombre}</TableCell>
+                          <TableCell className="max-w-[200px]"><ProductLink nombre={p.nombre} className="truncate block" /></TableCell>
                           <TableCell><AbcBadge abc={p.clasificacion_abc} /></TableCell>
                           <TableCell><TendenciaIndicator tendencia={p.tendencia} /></TableCell>
                           <TableCell>{p.proveedor || '-'}</TableCell>
@@ -297,6 +299,10 @@ export function Compras() {
                         Dias stock
                         <MetricTooltip text="Stock actual / venta diaria promedio (ultimos 30 dias). Indica cuantos dias dura el inventario actual al ritmo de venta actual." />
                       </TableHead>
+                      <TableHead className="text-right">
+                        ROP
+                        <MetricTooltip text="Punto de reorden: stock minimo al que debes llegar antes de pedir. ROP = venta_diaria x (lead_time + safety_stock)." />
+                      </TableHead>
                       <TableHead className="text-right">Sugerido</TableHead>
                       <TableHead className="text-right">
                         ROI Est.
@@ -312,7 +318,7 @@ export function Compras() {
                           <TableCell>
                             <Badge variant={cfg.color}>{cfg.icon} {cfg.label}</Badge>
                           </TableCell>
-                          <TableCell className="font-medium max-w-[180px] truncate" title={producto.nombre}>{producto.nombre}</TableCell>
+                          <TableCell className="max-w-[180px]"><ProductLink nombre={producto.nombre} className="truncate block" /></TableCell>
                           <TableCell><AbcBadge abc={producto.clasificacion_abc} /></TableCell>
                           <TableCell><TendenciaIndicator tendencia={producto.tendencia} /></TableCell>
                           <TableCell>{producto.familia || '-'}</TableCell>
@@ -331,6 +337,7 @@ export function Compras() {
                               {producto.dias_stock?.toFixed(0) || 0}
                             </span>
                           </TableCell>
+                          <TableCell className="text-right">{producto.punto_reorden ?? '-'}</TableCell>
                           <TableCell className="text-right font-bold text-primary">{producto.cantidad_sugerida}</TableCell>
                           <TableCell className="text-right text-emerald-600">${Number(producto.roi_estimado || 0).toLocaleString()}</TableCell>
                         </TableRow>

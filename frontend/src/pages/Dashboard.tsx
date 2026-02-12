@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { MetricCards } from '../components/dashboard/MetricCards';
+import { SaludInventario } from '../components/dashboard/SaludInventario';
 import { AlertSystem } from '../components/dashboard/AlertSystem';
 import { VentasDiarias } from '../components/charts/VentasDiarias';
 import { VentasVendedor } from '../components/charts/VentasVendedor';
@@ -31,8 +32,15 @@ export function Dashboard() {
       {/* Métricas */}
       <MetricCards />
 
-      {/* Alertas */}
-      <AlertSystem />
+      {/* Salud inventario + Alertas */}
+      <div className="grid gap-6 lg:grid-cols-4">
+        <div className="lg:col-span-1">
+          <SaludInventario />
+        </div>
+        <div className="lg:col-span-3">
+          <AlertSystem />
+        </div>
+      </div>
 
       {/* Gráficos principales */}
       <div className="grid gap-6 lg:grid-cols-2">

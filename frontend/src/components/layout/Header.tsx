@@ -17,6 +17,8 @@ const routeNames: Record<string, string> = {
   '': 'Dashboard',
   'decisiones': 'Centro de Decisiones',
   'margenes': 'Analisis de Margenes',
+  'facturas': 'Facturas de Proveedor',
+  'producto': 'Detalle de Producto',
   'predicciones': 'Predicciones',
   'abc': 'Analisis ABC',
   'vendedores': 'Ranking de Vendedores',

@@ -62,6 +62,20 @@ class InsightsService:
             if (s.clasificacion_abc or "C") == "C" and s.dias_stock >= 90
         ]
 
+        # Productos que se van a agotar esta semana (todos los que tienen < 7 dias)
+        productos_agotamiento_semana = [
+            s for s in sugerencias if s.dias_stock < 7 and s.dias_stock >= 0
+        ]
+        productos_agotamiento_semana.sort(key=lambda x: x.dias_stock)
+
+        # Costo de oportunidad: ventas perdidas estimadas por quiebre (stock=0)
+        # Aproximacion: productos con stock 0 y venta_diaria > 0 pierden venta_diaria * 7 * precio_aproximado
+        costo_oportunidad = 0.0
+        for s in sugerencias:
+            if s.cantidad_disponible <= 0 and s.venta_diaria > 0 and s.precio_compra:
+                precio_venta_aprox = s.precio_compra * 1.4  # margen ~30%
+                costo_oportunidad += s.venta_diaria * 7 * precio_venta_aprox
+
         # Proveedores en riesgo: muchos productos en riesgo por proveedor
         proveedores_map: Dict[str, Dict[str, Any]] = {}
         for s in productos_en_riesgo:
@@ -87,5 +101,17 @@ class InsightsService:
             "oportunidades": oportunidades[:20],
             "sobre_stock": sobre_stock[:20],
             "proveedores_en_riesgo": proveedores_en_riesgo,
+            "productos_agotamiento_semana": [
+                {
+                    "nombre": s.nombre,
+                    "proveedor": s.proveedor,
+                    "dias_stock": s.dias_stock,
+                    "venta_diaria": s.venta_diaria,
+                    "cantidad_sugerida": s.cantidad_sugerida,
+                    "prioridad": s.prioridad,
+                }
+                for s in productos_agotamiento_semana[:15]
+            ],
+            "costo_oportunidad_estimado": round(costo_oportunidad, 2),
         }
 

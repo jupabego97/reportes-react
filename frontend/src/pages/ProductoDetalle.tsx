@@ -1,331 +1,296 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
+import { buttonVariants } from '../components/ui/button';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { ResponsiveLine } from '@nivo/line';
 import {
-    ArrowLeft,
-    Package,
-    TrendingUp,
-    TrendingDown,
-    DollarSign,
-    BarChart3,
-    AlertTriangle
+  Package,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ShoppingCart,
+  ArrowLeft,
+  BarChart3,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '../components/ui/table';
-import { api } from '../services/api';
+import { useProductoDetalle } from '../hooks/useApi';
+import { formatCurrency, formatNumber } from '../lib/utils';
 import { cn } from '../lib/utils';
-import { ResponsiveLine } from '@nivo/line';
-
-// Types
-interface ProductoDetalle {
-    nombre: string;
-    familia: string | null;
-    stock_actual: number;
-    precio_venta: number;
-    precio_compra_promedio: number | null;
-    venta_diaria: number;
-    dias_cobertura: number | null;
-    total_vendido_30d: number;
-    total_ingresos_30d: number;
-    margen_porcentaje: number | null;
-    tendencia: number;
-    tendencia_label: string;
-    historial_ventas: {
-        fecha_venta: string;
-        cantidad: number;
-        total_venta: number;
-        precio_promedio: number;
-        costo_promedio: number | null;
-        vendedores: string | null;
-    }[];
-}
-
-// Format currency
-const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(value);
-};
 
 export function ProductoDetalle() {
-    const { nombre } = useParams<{ nombre: string }>();
-    const navigate = useNavigate();
+  const { nombre } = useParams<{ nombre: string }>();
+  const { data, isLoading, error } = useProductoDetalle(nombre);
 
-    const { data: producto, isLoading, error } = useQuery({
-        queryKey: ['producto-detalle', nombre],
-        queryFn: () => api.get<ProductoDetalle>(`/api/inventario/producto/${encodeURIComponent(nombre || '')}`),
-        enabled: !!nombre,
-    });
-
-    if (!nombre) {
-        return (
-            <div className="text-center py-12">
-                <p className="text-muted-foreground">Producto no especificado</p>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="text-center py-12">
-                <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-                <p className="text-destructive">Error al cargar el producto</p>
-                <Button onClick={() => navigate(-1)} className="mt-4">Volver</Button>
-            </div>
-        );
-    }
-
-    // Prepare chart data
-    const chartData = producto?.historial_ventas ? [
-        {
-            id: 'Ventas',
-            data: producto.historial_ventas
-                .slice()
-                .reverse()
-                .map(v => ({
-                    x: v.fecha_venta,
-                    y: v.cantidad,
-                })),
-        },
-    ] : [];
-
+  if (!nombre) {
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-4"
-            >
-                <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => navigate(-1)}
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex-1">
-                    <h1 className="text-2xl font-bold tracking-tight line-clamp-1">
-                        {producto?.nombre || nombre}
-                    </h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        {producto?.familia && (
-                            <Badge variant="secondary">{producto.familia}</Badge>
-                        )}
-                        {producto && (
-                            <Badge
-                                variant={producto.tendencia > 5 ? 'default' : producto.tendencia < -5 ? 'destructive' : 'outline'}
-                            >
-                                {producto.tendencia_label}
-                            </Badge>
-                        )}
-                    </div>
-                </div>
-            </motion.div>
-
-            {isLoading ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-[120px]" />)}
-                </div>
-            ) : producto && (
-                <>
-                    {/* KPIs */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.1 }}
-                        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
-                    >
-                        {/* Stock */}
-                        <Card className={cn(
-                            producto.dias_cobertura !== null && producto.dias_cobertura <= 7 && 'border-red-500/50'
-                        )}>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Stock Actual</CardTitle>
-                                <Package className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{producto.stock_actual} unidades</div>
-                                <p className="text-xs text-muted-foreground">
-                                    {producto.dias_cobertura !== null
-                                        ? `${producto.dias_cobertura} días de cobertura`
-                                        : 'Sin ventas recientes'}
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        {/* Ventas mensuales */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Ventas (30d)</CardTitle>
-                                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{producto.total_vendido_30d} uds</div>
-                                <p className="text-xs text-muted-foreground">
-                                    {formatCurrency(producto.total_ingresos_30d)} en ingresos
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        {/* Venta diaria */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Velocidad de Venta</CardTitle>
-                                {producto.tendencia > 0 ? (
-                                    <TrendingUp className="h-4 w-4 text-green-500" />
-                                ) : (
-                                    <TrendingDown className="h-4 w-4 text-red-500" />
-                                )}
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{producto.venta_diaria}/día</div>
-                                <p className={cn(
-                                    "text-xs",
-                                    producto.tendencia > 0 ? "text-green-600" : "text-red-600"
-                                )}>
-                                    {producto.tendencia > 0 ? '+' : ''}{producto.tendencia}% vs semana anterior
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        {/* Margen */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Margen</CardTitle>
-                                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className={cn(
-                                    "text-2xl font-bold",
-                                    producto.margen_porcentaje !== null && producto.margen_porcentaje < 10 && "text-red-600",
-                                    producto.margen_porcentaje !== null && producto.margen_porcentaje >= 20 && "text-green-600"
-                                )}>
-                                    {producto.margen_porcentaje !== null ? `${producto.margen_porcentaje}%` : 'N/A'}
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Precio: {formatCurrency(producto.precio_venta)}
-                                    {producto.precio_compra_promedio && (
-                                        <> | Costo: {formatCurrency(producto.precio_compra_promedio)}</>
-                                    )}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-
-                    {/* Gráfico de ventas */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                    >
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Historial de Ventas</CardTitle>
-                                <CardDescription>Unidades vendidas por día</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {chartData.length > 0 && chartData[0].data.length > 0 ? (
-                                    <div className="h-[300px]">
-                                        <ResponsiveLine
-                                            data={chartData}
-                                            margin={{ top: 20, right: 20, bottom: 50, left: 50 }}
-                                            xScale={{ type: 'point' }}
-                                            yScale={{ type: 'linear', min: 0, max: 'auto' }}
-                                            curve="monotoneX"
-                                            axisBottom={{
-                                                tickSize: 5,
-                                                tickPadding: 5,
-                                                tickRotation: -45,
-                                                format: (v) => v.slice(5), // MM-DD
-                                            }}
-                                            axisLeft={{
-                                                tickSize: 5,
-                                                tickPadding: 5,
-                                                legend: 'Cantidad',
-                                                legendOffset: -40,
-                                                legendPosition: 'middle',
-                                            }}
-                                            colors={['hsl(var(--primary))']}
-                                            pointSize={8}
-                                            pointColor={{ theme: 'background' }}
-                                            pointBorderWidth={2}
-                                            pointBorderColor={{ from: 'serieColor' }}
-                                            enableArea={true}
-                                            areaOpacity={0.1}
-                                            useMesh={true}
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                                        No hay datos de ventas para mostrar
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-
-                    {/* Tabla de historial */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                    >
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Detalle de Ventas</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Fecha</TableHead>
-                                            <TableHead className="text-right">Cantidad</TableHead>
-                                            <TableHead className="text-right">Total</TableHead>
-                                            <TableHead className="text-right">Precio</TableHead>
-                                            <TableHead className="text-right">Costo</TableHead>
-                                            <TableHead>Vendedor</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {producto.historial_ventas.slice(0, 20).map((venta, idx) => (
-                                            <TableRow key={idx}>
-                                                <TableCell>{venta.fecha_venta}</TableCell>
-                                                <TableCell className="text-right font-mono">{venta.cantidad}</TableCell>
-                                                <TableCell className="text-right font-mono">
-                                                    {formatCurrency(venta.total_venta)}
-                                                </TableCell>
-                                                <TableCell className="text-right font-mono">
-                                                    {formatCurrency(venta.precio_promedio)}
-                                                </TableCell>
-                                                <TableCell className="text-right font-mono">
-                                                    {venta.costo_promedio ? formatCurrency(venta.costo_promedio) : '-'}
-                                                </TableCell>
-                                                <TableCell className="max-w-[150px] truncate">
-                                                    {venta.vendedores || '-'}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                </>
-            )}
-        </div>
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Producto no especificado</p>
+        <Link to="/" className={cn(buttonVariants({ variant: 'link' }), 'mt-2')}>
+          Volver al inicio
+        </Link>
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-destructive">Error: {error.message}</p>
+        <Link to="/" className={cn(buttonVariants({ variant: 'link' }), 'mt-2')}>
+          Volver al inicio
+        </Link>
+      </div>
+    );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-[100px]" />
+          ))}
+        </div>
+        <Skeleton className="h-[350px]" />
+      </div>
+    );
+  }
+
+  const tendenciaIcon =
+    (data.tendencia ?? 0) > 5 ? (
+      <TrendingUp className="h-4 w-4 text-green-600" />
+    ) : (data.tendencia ?? 0) < -5 ? (
+      <TrendingDown className="h-4 w-4 text-red-600" />
+    ) : (
+      <Minus className="h-4 w-4 text-muted-foreground" />
+    );
+
+  // Datos para grafico de linea (historial invertido para fechas ascendentes)
+  const chartData = (data.historial_ventas || [])
+    .slice()
+    .reverse()
+    .map((v: any) => ({
+      x: v.fecha_venta || v.fecha || '',
+      y: Number(v.cantidad || 0),
+    }));
+
+  return (
+    <div className="space-y-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+        <Link
+          to="/"
+          className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'mb-2 inline-flex items-center gap-1')}
+        >
+          <ArrowLeft className="h-4 w-4" /> Volver
+        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">{data.nombre}</h1>
+          {data.clasificacion_abc && (
+            <Badge variant={data.clasificacion_abc === 'A' ? 'default' : data.clasificacion_abc === 'B' ? 'secondary' : 'outline'}>
+              ABC {data.clasificacion_abc}
+            </Badge>
+          )}
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            {tendenciaIcon}
+            <span>{data.tendencia_label || 'Estable'}</span>
+          </div>
+          {data.familia && (
+            <Badge variant="outline">{data.familia}</Badge>
+          )}
+          {data.proveedor && (
+            <span className="text-sm text-muted-foreground">Proveedor: {data.proveedor}</span>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Cards metricas */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Package className="h-4 w-4" /> Stock actual
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatNumber(data.stock_actual ?? 0)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Dias de cobertura</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              className={cn(
+                'text-2xl font-bold',
+                (data.dias_cobertura ?? 999) <= 7 && 'text-red-600',
+                (data.dias_cobertura ?? 0) > 7 && (data.dias_cobertura ?? 0) <= 14 && 'text-amber-600'
+              )}
+            >
+              {data.dias_cobertura != null ? data.dias_cobertura.toFixed(1) : '-'}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Venta diaria</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatNumber(data.venta_diaria ?? 0)}</div>
+            <p className="text-xs text-muted-foreground">ultimos 30 dias</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Margen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {data.margen_porcentaje != null ? `${data.margen_porcentaje.toFixed(1)}%` : '-'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Venta: {formatCurrency(data.precio_venta ?? 0)} | Compra: {data.precio_compra_promedio != null ? formatCurrency(data.precio_compra_promedio) : '-'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {data.fill_rate_estimado != null && (
+        <Card>
+          <CardContent className="py-3">
+            <span className="text-sm text-muted-foreground">Fill rate estimado: </span>
+            <span className="font-semibold">{data.fill_rate_estimado}%</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Grafico historial ventas */}
+      {chartData.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" /> Comportamiento de ventas en el tiempo
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveLine
+                  data={[{ id: 'cantidad', data: chartData, color: 'hsl(var(--primary))' }]}
+                  margin={{ top: 20, right: 30, bottom: 60, left: 50 }}
+                  xScale={{ type: 'point' }}
+                  yScale={{ type: 'linear', min: 0, max: 'auto' }}
+                  curve="monotoneX"
+                  axisTop={null}
+                  axisRight={null}
+                  axisBottom={{
+                    tickSize: 5,
+                    tickPadding: 10,
+                    tickRotation: -45,
+                    format: (v) => String(v).slice(0, 10),
+                  }}
+                  axisLeft={{
+                    tickSize: 5,
+                    tickPadding: 5,
+                  }}
+                  enableGridX={false}
+                  enableGridY={true}
+                  colors={['hsl(var(--primary))']}
+                  lineWidth={2}
+                  pointSize={6}
+                  pointColor="hsl(var(--primary))"
+                  pointBorderWidth={2}
+                  pointBorderColor="#fff"
+                  enableArea={true}
+                  areaOpacity={0.2}
+                  useMesh={true}
+                  theme={{
+                    axis: { ticks: { text: { fill: 'hsl(var(--muted-foreground))', fontSize: 11 } } },
+                    grid: { line: { stroke: 'hsl(var(--border))' } },
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Tabla historial */}
+      {data.historial_ventas && data.historial_ventas.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Historial de ventas diarias</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Cantidad</TableHead>
+                  <TableHead className="text-right">Total venta</TableHead>
+                  <TableHead>Vendedores</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(data.historial_ventas as any[]).slice(0, 30).map((v: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell>{v.fecha_venta || v.fecha}</TableCell>
+                    <TableCell className="text-right">{formatNumber(v.cantidad ?? 0)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(v.total_venta ?? 0)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{v.vendedores || '-'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sugerencia de compra */}
+      {data.sugerencia_compra && (data.dias_cobertura == null || data.dias_cobertura < 14) && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card className="border-primary/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <ShoppingCart className="h-5 w-5" /> Sugerencia de compra
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                <div>
+                  <span className="text-sm text-muted-foreground">Cantidad sugerida: </span>
+                  <span className="font-bold">{formatNumber(data.sugerencia_compra.cantidad_sugerida ?? 0)}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Costo estimado: </span>
+                  <span className="font-bold">{formatCurrency(data.sugerencia_compra.costo_estimado ?? 0)}</span>
+                </div>
+                <div>
+                  <Badge variant={data.sugerencia_compra.prioridad?.includes('Urgente') ? 'destructive' : 'secondary'}>
+                    {data.sugerencia_compra.prioridad || '-'}
+                  </Badge>
+                </div>
+                {data.sugerencia_compra.dias_stock != null && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Dias stock actual: </span>
+                    <span className="font-bold">{data.sugerencia_compra.dias_stock}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+    </div>
+  );
 }

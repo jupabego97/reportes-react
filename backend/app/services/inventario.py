@@ -8,6 +8,11 @@ from dataclasses import dataclass
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.schemas import FilterParams
+from app.services.ventas import VentasService
+from app.services.abc import ABCService
+from app.services.compras import ComprasService
+
 
 @dataclass
 class ProductoInventario:
@@ -256,7 +261,7 @@ class InventarioService:
         
         producto = producto_row._asdict()
         
-        # Historial de ventas (últimos 90 días)
+        # Historial de ventas (últimos 90 días) con proveedor
         ventas_query = """
             SELECT 
                 fecha_venta,
@@ -264,7 +269,8 @@ class InventarioService:
                 SUM(precio * cantidad) as total_venta,
                 AVG(precio) as precio_promedio,
                 AVG(precio_promedio_compra) as costo_promedio,
-                STRING_AGG(DISTINCT vendedor, ', ') as vendedores
+                STRING_AGG(DISTINCT vendedor, ', ') as vendedores,
+                MAX(proveedor_moda) as proveedor
             FROM reportes_ventas_30dias
             WHERE nombre = :nombre
             GROUP BY fecha_venta
@@ -273,7 +279,26 @@ class InventarioService:
         
         result = await self.db.execute(text(ventas_query), {"nombre": nombre})
         ventas = [dict(row._asdict()) for row in result.fetchall()]
-        
+
+        # Proveedor principal (el mas frecuente en ventas)
+        proveedor = ventas[0].get("proveedor") if ventas else None
+
+        hoy = date.today()
+        filtros = FilterParams(fecha_inicio=hoy - timedelta(days=30), fecha_fin=hoy)
+
+        # Clasificacion ABC (usando ultimos 30 dias)
+        clasificacion_abc = None
+        try:
+            ventas_svc = VentasService(self.db)
+            abc_svc = ABCService(ventas_svc)
+            abc_result = await abc_svc.get_analisis_abc(filtros)
+            for p in abc_result.get("productos", []):
+                if p.get("nombre") == nombre:
+                    clasificacion_abc = p.get("categoria")
+                    break
+        except Exception:
+            pass
+
         # Calcular métricas
         total_vendido = sum(v["cantidad"] for v in ventas)
         total_ingresos = sum(float(v["total_venta"] or 0) for v in ventas)
@@ -292,10 +317,37 @@ class InventarioService:
             tendencia = ((ultimas_2_sem - prev_2_sem) / prev_2_sem * 100) if prev_2_sem > 0 else 0
         else:
             tendencia = 0
+
+        # Fill rate estimado: dias con stock probable / 30. Proxy = min(1, dias_cobertura/30)
+        fill_rate_estimado = None
+        if venta_diaria and venta_diaria > 0 and stock_actual is not None:
+            dias_cob = stock_actual / venta_diaria if venta_diaria else 0
+            fill_rate_estimado = round(min(1.0, dias_cob / 30) * 100, 1) if dias_cob else 0
+
+        # Sugerencia de compra si aplica
+        sugerencia_compra = None
+        try:
+            ventas_svc = VentasService(self.db)
+            compras_svc = ComprasService(self.db, ventas_svc)
+            sugerencias = await compras_svc.get_sugerencias(filtros)
+            for s in sugerencias:
+                if s.nombre == nombre:
+                    sugerencia_compra = {
+                        "cantidad_sugerida": s.cantidad_sugerida,
+                        "costo_estimado": s.costo_estimado,
+                        "prioridad": s.prioridad,
+                        "dias_stock": s.dias_stock,
+                    }
+                    break
+        except Exception:
+            pass
         
         return {
             "nombre": nombre,
             "familia": producto.get("familia"),
+            "proveedor": proveedor,
+            "clasificacion_abc": clasificacion_abc,
+            "fill_rate_estimado": fill_rate_estimado,
             "stock_actual": stock_actual,
             "precio_venta": float(producto.get("precio_venta") or 0),
             "precio_compra_promedio": round(precio_compra_prom, 2) if precio_compra_prom else None,
@@ -308,7 +360,8 @@ class InventarioService:
             ) if precio_compra_prom else None,
             "tendencia": round(tendencia, 1),
             "tendencia_label": "📈 Creciendo" if tendencia > 5 else ("📉 Decreciendo" if tendencia < -5 else "➡️ Estable"),
-            "historial_ventas": ventas[:30],  # Últimos 30 registros
+            "historial_ventas": ventas[:30],
+            "sugerencia_compra": sugerencia_compra,
         }
     
     async def get_valor_por_familia(self) -> List[Dict[str, Any]]:

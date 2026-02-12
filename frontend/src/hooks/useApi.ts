@@ -38,6 +38,7 @@ export const queryKeys = {
   dashboard: (filters: FilterParams) => ['dashboard', filters] as const,
   metricas: (filters: FilterParams) => ['metricas', filters] as const,
   alertas: (filters: FilterParams) => ['alertas', filters] as const,
+  saludInventario: ['salud-inventario'] as const,
   ventas: (filters: FilterParams & PaginationParams) => ['ventas', filters] as const,
   ventasPorDia: (filters: FilterParams) => ['ventas-por-dia', filters] as const,
   ventasPorVendedor: (filters: FilterParams) => ['ventas-por-vendedor', filters] as const,
@@ -52,6 +53,9 @@ export const queryKeys = {
   sugerenciasCompra: (filters: FilterParams) => ['sugerencias-compra', filters] as const,
   resumenComprasProveedores: (filters: FilterParams) => ['resumen-compras-proveedores', filters] as const,
   insights: (filters: FilterParams) => ['insights', filters] as const,
+  facturasProveedor: (params?: Record<string, unknown>) => ['facturas-proveedor', params ?? {}] as const,
+  facturasProveedorResumen: (params?: Record<string, unknown>) => ['facturas-proveedor-resumen', params ?? {}] as const,
+  productoDetalle: (nombre: string) => ['producto-detalle', nombre] as const,
 };
 
 export function useMetricas() {
@@ -68,7 +72,15 @@ export function useAlertas() {
   return useQuery({
     queryKey: queryKeys.alertas(filters),
     queryFn: () => apiService.getAlertas(filters),
-    staleTime: 60000, // 1 minuto
+    staleTime: 60000,
+  });
+}
+
+export function useSaludInventario() {
+  return useQuery({
+    queryKey: queryKeys.saludInventario,
+    queryFn: () => apiService.getSaludInventario(),
+    staleTime: 60000,
   });
 }
 
@@ -196,6 +208,31 @@ export function useInsights() {
   return useQuery({
     queryKey: queryKeys.insights(filters),
     queryFn: () => apiService.getInsights(filters),
+    staleTime: 60000,
+  });
+}
+
+export function useFacturasProveedor(params?: { proveedor?: string; dias_plazo?: number; estado?: string }) {
+  return useQuery({
+    queryKey: queryKeys.facturasProveedor(params),
+    queryFn: () => apiService.getFacturasProveedor(params),
+    staleTime: 60000,
+  });
+}
+
+export function useFacturasProveedorResumen(params?: { proveedor?: string; dias_plazo?: number }) {
+  return useQuery({
+    queryKey: queryKeys.facturasProveedorResumen(params),
+    queryFn: () => apiService.getFacturasProveedorResumen(params),
+    staleTime: 60000,
+  });
+}
+
+export function useProductoDetalle(nombre: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.productoDetalle(nombre || ''),
+    queryFn: () => apiService.getProductoDetalle(nombre!),
+    enabled: !!nombre,
     staleTime: 60000,
   });
 }

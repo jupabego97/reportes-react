@@ -18,6 +18,7 @@ import {
   Target,
   Menu,
   X,
+  Receipt,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -45,6 +46,7 @@ const navigation = [
   { name: 'Análisis ABC', href: '/abc', icon: BarChart3 },
   { name: 'Vendedores', href: '/vendedores', icon: Users },
   { name: 'Proveedores', href: '/proveedores', icon: Truck },
+  { name: 'Facturas proveedor', href: '/facturas', icon: Receipt },
   { name: 'Compras', href: '/compras', icon: PackageSearch },
   { name: 'Insights', href: '/insights', icon: Lightbulb },
   { name: 'Datos', href: '/datos', icon: Table },

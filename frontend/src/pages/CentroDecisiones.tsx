@@ -19,6 +19,7 @@ import {
 import { useGenerarOrdenCompra, useResumenComprasProveedores, useSugerenciasCompra } from '../hooks/useApi';
 import { formatCurrency, formatNumber, exportToCSV } from '../lib/utils';
 import { MetricTooltip } from '../components/ui/metric-tooltip';
+import { ProductLink } from '../components/ProductLink';
 
 const prioridadesAccionHoy = new Set(['🔴 Urgente', '🟠 Alta']);
 type VentanaDecision = 'hoy' | '48h' | '7d';
@@ -239,6 +240,7 @@ export function CentroDecisiones() {
                         Dias stock
                         <MetricTooltip text="Stock actual / venta diaria promedio (ultimos 30 dias). Indica cuantos dias dura el inventario actual al ritmo de venta actual." />
                       </TableHead>
+                      <TableHead className="text-right">ROP</TableHead>
                       <TableHead className="text-right">Sugerido</TableHead>
                       <TableHead className="text-right">Costo</TableHead>
                     </TableRow>
@@ -246,7 +248,9 @@ export function CentroDecisiones() {
                   <TableBody>
                     {comprarHoy.slice(0, 25).map((item: any, idx: number) => (
                       <TableRow key={`${item.nombre}-${idx}`}>
-                        <TableCell className="font-medium max-w-[220px] truncate" title={item.nombre}>{item.nombre}</TableCell>
+                        <TableCell className="max-w-[220px]">
+                          <ProductLink nombre={item.nombre} className="truncate block max-w-[220px]" />
+                        </TableCell>
                         <TableCell>{item.proveedor || 'Sin proveedor'}</TableCell>
                         <TableCell>
                           <Badge variant={item.prioridad === '🔴 Urgente' ? 'destructive' : 'secondary'}>
@@ -255,6 +259,7 @@ export function CentroDecisiones() {
                         </TableCell>
                         <TableCell className="text-right">{formatNumber(item.cantidad_disponible || 0)}</TableCell>
                         <TableCell className="text-right">{Number(item.dias_stock || 0).toFixed(0)}</TableCell>
+                        <TableCell className="text-right">{item.punto_reorden ?? '-'}</TableCell>
                         <TableCell className="text-right font-semibold">{formatNumber(item.cantidad_sugerida || 0)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.costo_estimado || 0)}</TableCell>
                       </TableRow>
@@ -340,7 +345,9 @@ export function CentroDecisiones() {
                     <TableBody>
                       {(ordenActual.items || []).map((item, idx) => (
                         <TableRow key={`${item.nombre}-${idx}`}>
-                          <TableCell>{item.nombre}</TableCell>
+                          <TableCell>
+                            <ProductLink nombre={item.nombre} />
+                          </TableCell>
                           <TableCell>{item.prioridad}</TableCell>
                           <TableCell className="text-right">{formatNumber(item.cantidad_sugerida || 0)}</TableCell>
                           <TableCell className="text-right">{formatCurrency(item.costo_estimado || 0)}</TableCell>

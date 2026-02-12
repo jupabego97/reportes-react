@@ -7,9 +7,14 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.auth.dependencies import get_current_active_user
 from app.services.inventario import InventarioService
 
-router = APIRouter(prefix="/api/inventario", tags=["inventario"])
+router = APIRouter(
+    prefix="/api/inventario",
+    tags=["inventario"],
+    dependencies=[Depends(get_current_active_user)],
+)
 
 
 @router.get("")

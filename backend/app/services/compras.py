@@ -170,6 +170,12 @@ class ComprasService:
             else:
                 prioridad = "🟢 Baja"
 
+            # Punto de reorden (ROP) = venta_diaria * lead_time + safety_stock
+            # lead_time default 7 dias, safety_stock = 3 dias * (1 + variabilidad)
+            lead_time_dias = 7
+            safety_dias = 3 * (1 + min(variabilidad, 1.0))  # 3-6 dias segun variabilidad
+            punto_reorden = int(round(venta_diaria * (lead_time_dias + safety_dias)))
+
             # ROI estimado (si tenemos margen unitario aproximado)
             # Aproximamos margen como (precio_venta_promedio - precio_compra)
             if unidades_vendidas > 0:
@@ -197,6 +203,7 @@ class ComprasService:
                     cobertura_objetivo_dias=cobertura_objetivo,
                     roi_estimado=round(roi_estimado, 2),
                     unidades_vendidas_periodo=unidades_vendidas,
+                    punto_reorden=punto_reorden,
                 )
             )
         

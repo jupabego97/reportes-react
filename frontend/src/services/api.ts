@@ -129,6 +129,9 @@ export const apiService = {
   getAlertas: (filters: FilterParams) =>
     api.get<any[]>('/api/dashboard/alertas', filters),
 
+  getSaludInventario: () =>
+    api.get<{ salud_porcentaje: number; top_criticos: { nombre: string; dias_cobertura?: number; estado_stock?: string }[]; total_productos: number }>('/api/dashboard/salud-inventario'),
+
   // Ventas
   getVentas: (filters: FilterParams & PaginationParams) =>
     api.get<VentasResponse>('/api/ventas', filters),
@@ -190,6 +193,16 @@ export const apiService = {
   // Insights
   getInsights: (filters: FilterParams) =>
     api.get<any>('/api/insights', filters),
+
+  // Facturas proveedor
+  getFacturasProveedor: (params?: { proveedor?: string; dias_plazo?: number; estado?: string }) =>
+    api.get<any[]>('/api/facturas-proveedor', params),
+
+  getFacturasProveedorResumen: (params?: { proveedor?: string; dias_plazo?: number }) =>
+    api.get<any>('/api/facturas-proveedor/resumen', params),
+
+  getProductoDetalle: (nombre: string) =>
+    api.get<any>(`/api/inventario/producto/${encodeURIComponent(nombre)}`),
 
   // Export
   exportExcel: (filters: FilterParams) =>

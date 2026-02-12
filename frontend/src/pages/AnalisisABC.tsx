@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { useABC } from '../hooks/useApi';
+import { ProductLink } from '../components/ProductLink';
 
 const categoryColors = {
   A: 'hsl(142, 71%, 45%)',  // green
@@ -255,7 +256,7 @@ export function AnalisisABC() {
                   <TableBody>
                     {data.productos?.slice(0, 20).map((producto: any, index: number) => (
                       <TableRow key={index}>
-                        <TableCell className="font-medium">{producto.nombre}</TableCell>
+                        <TableCell><ProductLink nombre={producto.nombre} /></TableCell>
                         <TableCell>
                           <Badge
                             style={{ backgroundColor: categoryColors[producto.categoria as keyof typeof categoryColors] }}

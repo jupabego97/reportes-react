@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, TrendingUp, Package, Truck, Lightbulb, Search, Download } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Package, Truck, Lightbulb, Search, Download, Clock, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -17,8 +17,9 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { useInsights } from '../hooks/useApi';
-import { cn, exportToCSV } from '../lib/utils';
+import { cn, exportToCSV, formatCurrency } from '../lib/utils';
 import { MetricTooltip } from '../components/ui/metric-tooltip';
+import { ProductLink } from '../components/ProductLink';
 
 export function Insights() {
   const { data, isLoading, error } = useInsights();
@@ -36,6 +37,8 @@ export function Insights() {
   const oportunidadesRaw = data?.oportunidades || [];
   const sobreStockRaw = data?.sobre_stock || [];
   const proveedoresRiesgoRaw = data?.proveedores_en_riesgo || [];
+  const productosAgotamientoRaw = data?.productos_agotamiento_semana || [];
+  const costoOportunidad = data?.costo_oportunidad_estimado ?? 0;
 
   const q = busqueda.toLowerCase().trim();
   const filtrar = (items: any[]) => {
@@ -54,6 +57,13 @@ export function Insights() {
     if (!q) return proveedoresRiesgoRaw;
     return proveedoresRiesgoRaw.filter((p: any) => (p.proveedor || '').toLowerCase().includes(q));
   }, [proveedoresRiesgoRaw, q]);
+
+  const productosAgotamiento = useMemo(() => {
+    if (!q) return productosAgotamientoRaw;
+    return productosAgotamientoRaw.filter((p: any) =>
+      (p.nombre || '').toLowerCase().includes(q) || (p.proveedor || '').toLowerCase().includes(q)
+    );
+  }, [productosAgotamientoRaw, q]);
 
   const handleExportarRiesgo = () => {
     const headers = ['Producto', 'Proveedor', 'Stock', 'Venta/dia', 'Dias stock', 'Comprar'];
@@ -106,7 +116,7 @@ export function Insights() {
       ) : (
         <>
           {/* Resumen ejecutivo */}
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card className={cn(productosRiesgo.length > 0 && 'border-red-500/50')}>
                 <CardHeader className="pb-2">
@@ -162,7 +172,60 @@ export function Insights() {
                 </CardContent>
               </Card>
             </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+              <Card className={cn(costoOportunidad > 0 && 'border-amber-500/50')}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-amber-500" /> Costo oportunidad
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-amber-600">{formatCurrency(costoOportunidad)}</div>
+                  <p className="text-xs text-muted-foreground">Ventas perdidas estimadas (7 dias)</p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
+
+          {/* Productos que se agotan esta semana */}
+          {productosAgotamiento.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}>
+              <Card className="border-orange-500/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-600">
+                    <Clock className="h-5 w-5" /> Se agotan esta semana (menos de 7 dias stock)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>Proveedor</TableHead>
+                        <TableHead className="text-right">Dias stock</TableHead>
+                        <TableHead className="text-right">Venta/dia</TableHead>
+                        <TableHead className="text-right">Sugerido</TableHead>
+                        <TableHead>Prioridad</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {productosAgotamiento.slice(0, 15).map((p: any, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell className="max-w-[200px]"><ProductLink nombre={p.nombre} className="truncate block" /></TableCell>
+                          <TableCell>{p.proveedor || '-'}</TableCell>
+                          <TableCell className="text-right text-orange-600 font-bold">{p.dias_stock?.toFixed(0) ?? 0}</TableCell>
+                          <TableCell className="text-right">{p.venta_diaria}</TableCell>
+                          <TableCell className="text-right font-semibold">{p.cantidad_sugerida}</TableCell>
+                          <TableCell><Badge variant={p.prioridad?.includes('Urgente') ? 'destructive' : 'secondary'}>{p.prioridad || '-'}</Badge></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* Productos en riesgo */}
           {productosRiesgo.length > 0 && (
@@ -197,7 +260,7 @@ export function Insights() {
                     <TableBody>
                       {productosRiesgo.slice(0, 15).map((p: any, i: number) => (
                         <TableRow key={i}>
-                          <TableCell className="font-medium max-w-[200px] truncate" title={p.nombre}>{p.nombre}</TableCell>
+                          <TableCell className="max-w-[200px]"><ProductLink nombre={p.nombre} className="truncate block" /></TableCell>
                           <TableCell>{p.proveedor || '-'}</TableCell>
                           <TableCell className="text-right">
                             <span className={cn(p.cantidad_disponible === 0 && 'text-red-600 font-bold')}>
@@ -242,7 +305,7 @@ export function Insights() {
                     <TableBody>
                       {oportunidades.slice(0, 15).map((p: any, i: number) => (
                         <TableRow key={i}>
-                          <TableCell className="font-medium max-w-[200px] truncate" title={p.nombre}>{p.nombre}</TableCell>
+                          <TableCell className="max-w-[200px]"><ProductLink nombre={p.nombre} className="truncate block" /></TableCell>
                           <TableCell><Badge variant="default">{p.clasificacion_abc || '-'}</Badge></TableCell>
                           <TableCell>{p.proveedor || '-'}</TableCell>
                           <TableCell className="text-right">{p.cantidad_disponible}</TableCell>
@@ -280,7 +343,7 @@ export function Insights() {
                     <TableBody>
                       {sobreStock.slice(0, 15).map((p: any, i: number) => (
                         <TableRow key={i}>
-                          <TableCell className="font-medium max-w-[200px] truncate" title={p.nombre}>{p.nombre}</TableCell>
+                          <TableCell className="max-w-[200px]"><ProductLink nombre={p.nombre} className="truncate block" /></TableCell>
                           <TableCell>{p.familia || '-'}</TableCell>
                           <TableCell className="text-right">{p.cantidad_disponible}</TableCell>
                           <TableCell className="text-right">{p.venta_diaria}</TableCell>
@@ -330,7 +393,7 @@ export function Insights() {
           )}
 
           {/* Sin datos */}
-          {productosRiesgo.length === 0 && oportunidades.length === 0 && sobreStock.length === 0 && proveedoresRiesgo.length === 0 && (
+          {productosRiesgo.length === 0 && oportunidades.length === 0 && sobreStock.length === 0 && proveedoresRiesgo.length === 0 && productosAgotamiento.length === 0 && (
             <Card>
               <CardContent className="py-12">
                 <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">

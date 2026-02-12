@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpDown, ArrowUp, ArrowDown, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import {
@@ -14,6 +14,7 @@ import { Skeleton } from '../ui/skeleton';
 import { Pagination } from '../ui/pagination';
 import { useVentas, useExportExcel, useExportCSV, useExportPDF } from '../../hooks/useApi';
 import { cn } from '../../lib/utils';
+import { ProductLink } from '../ProductLink';
 
 type SortDirection = 'asc' | 'desc' | null;
 
@@ -22,12 +23,18 @@ interface Column {
   label: string;
   sortable?: boolean;
   format?: (value: any) => string;
+  render?: (value: any, row: any) => ReactNode;
   className?: string;
 }
 
 const columns: Column[] = [
   { key: 'fecha_venta', label: 'Fecha', sortable: true },
-  { key: 'nombre', label: 'Producto', sortable: true },
+  {
+    key: 'nombre',
+    label: 'Producto',
+    sortable: true,
+    render: (v) => (v ? <ProductLink nombre={v} /> : '-'),
+  },
   { key: 'vendedor', label: 'Vendedor', sortable: true },
   { key: 'familia', label: 'Familia', sortable: true },
   { 
@@ -211,7 +218,9 @@ export function DataTable() {
                 >
                   {columns.map((column) => (
                     <TableCell key={column.key} className={column.className}>
-                      {column.format
+                      {column.render
+                        ? column.render((row as any)[column.key], row)
+                        : column.format
                         ? column.format((row as any)[column.key])
                         : (row as any)[column.key] || '-'}
                     </TableCell>

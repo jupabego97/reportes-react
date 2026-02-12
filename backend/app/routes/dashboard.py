@@ -18,6 +18,7 @@ from app.models.schemas import (
     TopVendedorResponse,
 )
 from app.services.ventas import VentasService
+from app.services.inventario import InventarioService
 from app.routes.ventas import get_filter_params
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"], dependencies=[Depends(get_current_active_user)])
@@ -52,6 +53,27 @@ async def get_top_productos(
     """Obtiene top productos más vendidos."""
     service = VentasService(db)
     return await service.get_top_productos(filters, limit)
+
+
+@router.get("/salud-inventario")
+async def get_salud_inventario(db: AsyncSession = Depends(get_db)):
+    """Salud del inventario: % productos con stock normal, top 3 criticos."""
+    inv_service = InventarioService(db)
+    resumen = await inv_service.get_resumen_inventario()
+    alertas = await inv_service.get_alertas_inventario()
+
+    total = resumen.get("total_productos", 0) or 0
+    normales = resumen.get("productos_normales", 0) or 0
+    exceso = resumen.get("productos_exceso", 0) or 0
+    salud_porcentaje = round((normales + exceso) / total * 100, 1) if total > 0 else 100
+
+    top_criticos = []
+    for a in alertas:
+        if a.get("tipo") == "error" and a.get("datos"):
+            top_criticos = [{"nombre": p.get("nombre"), "dias_cobertura": p.get("dias_cobertura"), "estado_stock": p.get("estado_stock")} for p in (a["datos"][:3])]
+            break
+
+    return {"salud_porcentaje": salud_porcentaje, "top_criticos": top_criticos, "total_productos": total}
 
 
 @router.get("/top-vendedores", response_model=List[TopVendedorResponse])
