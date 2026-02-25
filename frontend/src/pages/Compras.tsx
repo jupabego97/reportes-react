@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart, TrendingUp, TrendingDown, Minus,
   Download, ChevronDown, ChevronUp, AlertTriangle,
-  Package, RefreshCw, Info
+  Package, RefreshCw, Info, X,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -16,6 +16,9 @@ import {
 import {
   Tooltip, TooltipContent, TooltipTrigger,
 } from '../components/ui/tooltip';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '../components/ui/select';
 import { useUrgenciasProveedor, useSugerenciasV2, useExportPedido } from '../hooks/useApi';
 import { cn } from '../lib/utils';
 
@@ -429,20 +432,55 @@ export function Compras() {
         </Button>
       </motion.div>
 
-      {/* Tarjetas de proveedores */}
-      <div>
-        <p className="text-sm text-muted-foreground mb-3 font-medium">
-          Seleccioná un proveedor para ver sus productos:
-        </p>
-        {loadingUrgencias ? (
+      {/* Selector de proveedor */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          {loadingUrgencias ? (
+            <Skeleton className="h-10 w-[280px]" />
+          ) : (
+            <Select
+              value={proveedorSeleccionado ?? ''}
+              onValueChange={(v) => { setProveedorSeleccionado(v); setPedido({}); setFiltroUrgencia('todos'); }}
+            >
+              <SelectTrigger className="w-[280px]">
+                <SelectValue placeholder="Seleccioná un proveedor…" />
+              </SelectTrigger>
+              <SelectContent>
+                {(urgencias as UrgenciaProveedor[] | undefined)?.length === 0 && (
+                  <SelectItem value="__empty__" disabled>Sin datos de proveedores</SelectItem>
+                )}
+                {(urgencias as UrgenciaProveedor[] | undefined)?.map(prov => (
+                  <SelectItem key={prov.proveedor} value={prov.proveedor}>
+                    <span className="flex items-center gap-2">
+                      {prov.proveedor}
+                      {prov.urgente > 0 && (
+                        <span className="text-xs text-red-600 font-semibold">🔴 {prov.urgente}</span>
+                      )}
+                      {prov.alta > 0 && (
+                        <span className="text-xs text-orange-500 font-semibold">🟠 {prov.alta}</span>
+                      )}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {proveedorSeleccionado && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setProveedorSeleccionado(null); setPedido({}); }}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Limpiar
+            </Button>
+          )}
+        </div>
+
+        {/* Tarjetas resumen de proveedores */}
+        {!loadingUrgencias && (urgencias as UrgenciaProveedor[] | undefined)?.length ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-[100px]" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {(urgencias as UrgenciaProveedor[] | undefined)?.map(prov => (
+            {(urgencias as UrgenciaProveedor[]).map(prov => (
               <ProveedorCard
                 key={prov.proveedor}
                 prov={prov}
@@ -451,7 +489,13 @@ export function Compras() {
               />
             ))}
           </div>
-        )}
+        ) : loadingUrgencias ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-[100px]" />
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {/* Panel de proveedor seleccionado */}
