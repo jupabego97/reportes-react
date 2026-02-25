@@ -293,3 +293,44 @@ class OrdenCompraResponse(BaseModel):
     costo_total: float
     items: List[SugerenciaCompraResponse]
 
+
+
+# =============================================================================
+# Compras V2 — algoritmo con historial completo
+# =============================================================================
+
+class PrecioProveedorComparativo(BaseModel):
+    """Precio de un proveedor para un SKU específico."""
+    proveedor: str
+    precio_compra: float
+    fecha_ultima_compra: date
+    es_proveedor_principal: bool
+
+
+class SugerenciaCompraV2Response(BaseModel):
+    """Sugerencia de compra con historial completo y ajuste estacional."""
+    nombre: str
+    familia: Optional[str] = None
+    proveedor_principal: Optional[str] = None
+    stock_actual: int
+    velocidad_diaria: float
+    dias_stock: float
+    cantidad_sugerida: int
+    precio_ultimo: Optional[float] = None
+    costo_estimado: float
+    urgencia: str
+    clasificacion_abc: str
+    tendencia: str
+    factor_estacional: float
+    otros_proveedores: List[PrecioProveedorComparativo] = []
+
+
+class ProveedorUrgenciaResponse(BaseModel):
+    """Resumen de urgencias por proveedor para las tarjetas de la UI."""
+    proveedor: str
+    urgente: int
+    alta: int
+    media: int
+    ok: int
+    total_productos_activos: int
+    inversion_estimada: float

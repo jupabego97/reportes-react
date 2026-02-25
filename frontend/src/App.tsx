@@ -6,17 +6,11 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
-import { CentroDecisiones } from './pages/CentroDecisiones';
 import { Margenes } from './pages/Margenes';
-import { Predicciones } from './pages/Predicciones';
-import { AnalisisABC } from './pages/AnalisisABC';
 import { Vendedores } from './pages/Vendedores';
 import { Proveedores } from './pages/Proveedores';
 import { Compras } from './pages/Compras';
-import { Insights } from './pages/Insights';
 import { Datos } from './pages/Datos';
-import { FacturasProveedor } from './pages/FacturasProveedor';
-import { ProductoDetalle } from './pages/ProductoDetalle';
 import { initializeTheme } from './stores/useThemeStore';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -69,17 +63,11 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="decisiones" element={<CentroDecisiones />} />
-              <Route path="margenes" element={<Margenes />} />
-              <Route path="predicciones" element={<Predicciones />} />
-              <Route path="abc" element={<AnalisisABC />} />
-              <Route path="vendedores" element={<Vendedores />} />
-              <Route path="proveedores" element={<Proveedores />} />
               <Route path="compras" element={<Compras />} />
-              <Route path="facturas" element={<FacturasProveedor />} />
-              <Route path="insights" element={<Insights />} />
+              <Route path="proveedores" element={<Proveedores />} />
+              <Route path="margenes" element={<Margenes />} />
+              <Route path="vendedores" element={<Vendedores />} />
               <Route path="datos" element={<Datos />} />
-              <Route path="producto/:nombre" element={<ProductoDetalle />} />
             </Route>
 
             {/* Redirección por defecto */}

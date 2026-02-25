@@ -1,369 +1,595 @@
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ShoppingCart, AlertTriangle, Package, TrendingUp, TrendingDown, Minus, Search, Download } from 'lucide-react';
-import { toast } from 'sonner';
-import { FilterPanel } from '../components/filters/FilterPanel';
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ShoppingCart, TrendingUp, TrendingDown, Minus,
+  Download, ChevronDown, ChevronUp, AlertTriangle,
+  Package, RefreshCw, Info
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow,
 } from '../components/ui/table';
-import { useSugerenciasCompra } from '../hooks/useApi';
-import { cn, exportToCSV } from '../lib/utils';
-import { MetricTooltip } from '../components/ui/metric-tooltip';
-import { ProductLink } from '../components/ProductLink';
+import {
+  Tooltip, TooltipContent, TooltipTrigger,
+} from '../components/ui/tooltip';
+import { useUrgenciasProveedor, useSugerenciasV2, useExportPedido } from '../hooks/useApi';
+import { cn } from '../lib/utils';
 
-// Mapeo de prioridades del backend a estilos del frontend
-const prioridadConfig: Record<string, { color: 'destructive' | 'secondary' | 'outline' | 'default'; icon: string; label: string }> = {
-  '🔴 Urgente': { color: 'destructive', icon: '🔴', label: 'Urgente' },
-  '🟠 Alta': { color: 'destructive', icon: '🟠', label: 'Alta' },
-  '🟡 Media': { color: 'secondary', icon: '🟡', label: 'Media' },
-  '🟢 Baja': { color: 'outline', icon: '🟢', label: 'Baja' },
+// ─── tipos ────────────────────────────────────────────────────────────────────
+
+interface OtroProveedor {
+  proveedor: string;
+  precio_compra: number;
+  fecha_ultima_compra: string;
+  es_proveedor_principal: boolean;
+}
+
+interface Sugerencia {
+  nombre: string;
+  familia?: string;
+  proveedor_principal?: string;
+  stock_actual: number;
+  velocidad_diaria: number;
+  dias_stock: number;
+  cantidad_sugerida: number;
+  precio_ultimo?: number;
+  costo_estimado: number;
+  urgencia: string;
+  clasificacion_abc: string;
+  tendencia: string;
+  factor_estacional: number;
+  otros_proveedores: OtroProveedor[];
+}
+
+interface UrgenciaProveedor {
+  proveedor: string;
+  urgente: number;
+  alta: number;
+  media: number;
+  ok: number;
+  total_productos_activos: number;
+  inversion_estimada: number;
+}
+
+// ─── helpers de estilos ───────────────────────────────────────────────────────
+
+const urgenciaConfig: Record<string, { label: string; badgeClass: string; rowClass: string }> = {
+  urgente: { label: 'URGENTE', badgeClass: 'bg-red-600 text-white', rowClass: 'bg-red-50 dark:bg-red-950/20' },
+  alta:    { label: 'Alta',    badgeClass: 'bg-orange-500 text-white', rowClass: 'bg-orange-50 dark:bg-orange-950/20' },
+  media:   { label: 'Media',   badgeClass: 'bg-yellow-500 text-white', rowClass: '' },
+  baja:    { label: 'Baja',    badgeClass: 'bg-blue-500 text-white',   rowClass: '' },
+  ok:      { label: 'OK',      badgeClass: 'bg-green-600 text-white',  rowClass: '' },
 };
 
-const prioridadesAltas = ['🔴 Urgente', '🟠 Alta'];
+const abcVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
+  A: 'default', B: 'secondary', C: 'outline',
+};
 
-function TendenciaIndicator({ tendencia }: { tendencia?: string }) {
-  if (tendencia === 'creciente') return <div className="flex items-center gap-1"><TrendingUp className="h-4 w-4 text-green-600" /><span className="text-xs text-green-600">Crece</span></div>;
-  if (tendencia === 'decreciente') return <div className="flex items-center gap-1"><TrendingDown className="h-4 w-4 text-red-600" /><span className="text-xs text-red-600">Baja</span></div>;
-  return <div className="flex items-center gap-1"><Minus className="h-4 w-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">Estable</span></div>;
+function DiasStockCell({ dias }: { dias: number }) {
+  const color =
+    dias <= 7  ? 'text-red-600 font-bold' :
+    dias <= 14 ? 'text-orange-500 font-semibold' :
+    dias <= 30 ? 'text-yellow-600' : 'text-green-600';
+  return <span className={color}>{dias === 999 ? '∞' : dias.toFixed(0)}</span>;
 }
 
-function AbcBadge({ abc }: { abc?: string }) {
-  const variant = abc === 'A' ? 'default' : abc === 'B' ? 'secondary' : 'outline';
-  return <Badge variant={variant}>{abc || '-'}</Badge>;
+function TendenciaIcon({ t }: { t: string }) {
+  if (t === 'creciente')  return <TrendingUp  className="h-4 w-4 text-green-600 inline" />;
+  if (t === 'decreciente') return <TrendingDown className="h-4 w-4 text-red-500 inline" />;
+  return <Minus className="h-4 w-4 text-muted-foreground inline" />;
 }
+
+function PrecioComparativo({ otros }: { otros: OtroProveedor[] }) {
+  if (otros.length <= 1) return null;
+  const alternativas = otros.filter(p => !p.es_proveedor_principal);
+  if (alternativas.length === 0) return null;
+  const masBarato = alternativas.reduce((a, b) => a.precio_compra < b.precio_compra ? a : b);
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="ml-1 cursor-help text-blue-500 text-xs underline underline-offset-2">
+          ★ {masBarato.proveedor.slice(0, 10)}…
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">
+        <p className="font-semibold mb-1">Otros proveedores para este SKU:</p>
+        <div className="space-y-1">
+          {otros.map(p => (
+            <div key={p.proveedor} className="flex justify-between gap-4 text-xs">
+              <span className={p.es_proveedor_principal ? 'font-bold' : ''}>{p.proveedor}</span>
+              <span>${p.precio_compra.toFixed(2)}</span>
+            </div>
+          ))}
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+// ─── tarjeta de proveedor ─────────────────────────────────────────────────────
+
+function ProveedorCard({
+  prov,
+  selected,
+  onClick,
+}: {
+  prov: UrgenciaProveedor;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const tieneUrgentes = prov.urgente > 0;
+  const tieneAltas = prov.alta > 0;
+  return (
+    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+      <Card
+        onClick={onClick}
+        className={cn(
+          'cursor-pointer transition-all border-2',
+          selected
+            ? 'border-primary shadow-md'
+            : tieneUrgentes
+            ? 'border-red-400'
+            : tieneAltas
+            ? 'border-orange-300'
+            : 'border-border',
+        )}
+      >
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold truncate">{prov.proveedor}</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <div className="flex gap-2 flex-wrap">
+            {prov.urgente > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold">
+                🔴 {prov.urgente} urgente{prov.urgente > 1 ? 's' : ''}
+              </span>
+            )}
+            {prov.alta > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 font-semibold">
+                🟠 {prov.alta} alta{prov.alta > 1 ? 's' : ''}
+              </span>
+            )}
+            {prov.media > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
+                🟡 {prov.media} media{prov.media > 1 ? 's' : ''}
+              </span>
+            )}
+            {prov.urgente === 0 && prov.alta === 0 && prov.media === 0 && (
+              <span className="text-xs text-muted-foreground">✓ Sin urgencias</span>
+            )}
+          </div>
+          {prov.inversion_estimada > 0 && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Inversión: <span className="font-semibold">${prov.inversion_estimada.toLocaleString()}</span>
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+// ─── fila expandible de la tabla ─────────────────────────────────────────────
+
+function FilaSugerencia({
+  item,
+  checked,
+  cantidadPedido,
+  onCheck,
+  onCantidadChange,
+}: {
+  item: Sugerencia;
+  checked: boolean;
+  cantidadPedido: number;
+  onCheck: (v: boolean) => void;
+  onCantidadChange: (v: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const cfg = urgenciaConfig[item.urgencia] ?? urgenciaConfig.ok;
+  const tieneAlternativas = item.otros_proveedores.length > 1;
+  const precioMasBarato = tieneAlternativas
+    ? Math.min(...item.otros_proveedores.map(p => p.precio_compra))
+    : null;
+  const hayMasBarato =
+    precioMasBarato !== null &&
+    item.precio_ultimo !== undefined &&
+    precioMasBarato < item.precio_ultimo;
+
+  return (
+    <>
+      <TableRow className={cn(cfg.rowClass, checked && 'ring-1 ring-primary/40')}>
+        {/* Checkbox */}
+        <TableCell>
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={e => onCheck(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+          />
+        </TableCell>
+
+        {/* Urgencia */}
+        <TableCell>
+          <span className={cn('text-xs px-2 py-1 rounded-full font-semibold', cfg.badgeClass)}>
+            {cfg.label}
+          </span>
+        </TableCell>
+
+        {/* Producto */}
+        <TableCell className="max-w-[200px]">
+          <div className="truncate font-medium text-sm" title={item.nombre}>{item.nombre}</div>
+          {item.familia && <div className="text-xs text-muted-foreground">{item.familia}</div>}
+        </TableCell>
+
+        {/* ABC */}
+        <TableCell>
+          <Badge variant={abcVariant[item.clasificacion_abc] ?? 'outline'}>
+            {item.clasificacion_abc}
+          </Badge>
+        </TableCell>
+
+        {/* Stock */}
+        <TableCell className="text-right">
+          <span className={item.stock_actual === 0 ? 'text-red-600 font-bold' : ''}>
+            {item.stock_actual}
+          </span>
+        </TableCell>
+
+        {/* Días stock */}
+        <TableCell className="text-right">
+          <DiasStockCell dias={item.dias_stock} />
+        </TableCell>
+
+        {/* Velocidad */}
+        <TableCell className="text-right text-xs text-muted-foreground">
+          {item.velocidad_diaria}/día
+          {item.factor_estacional !== 1 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3 w-3 inline ml-1 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                Factor estacional: ×{item.factor_estacional} (este mes es{' '}
+                {item.factor_estacional > 1 ? 'más alto' : 'más bajo'} que el promedio)
+              </TooltipContent>
+            </Tooltip>
+          )}{' '}
+          <TendenciaIcon t={item.tendencia} />
+        </TableCell>
+
+        {/* Último precio */}
+        <TableCell className="text-right">
+          <span>{item.precio_ultimo != null ? `$${item.precio_ultimo.toFixed(2)}` : '—'}</span>
+          {hayMasBarato && precioMasBarato !== null && (
+            <PrecioComparativo otros={item.otros_proveedores} />
+          )}
+        </TableCell>
+
+        {/* Cantidad sugerida / editable */}
+        <TableCell className="text-right">
+          <input
+            type="number"
+            min={0}
+            value={cantidadPedido}
+            onChange={e => onCantidadChange(Math.max(0, parseInt(e.target.value) || 0))}
+            className="w-20 text-right border rounded px-2 py-0.5 text-sm bg-background"
+          />
+        </TableCell>
+
+        {/* Costo estimado */}
+        <TableCell className="text-right font-semibold text-sm">
+          ${(cantidadPedido * (item.precio_ultimo ?? 0)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+        </TableCell>
+
+        {/* Expandir */}
+        <TableCell>
+          {tieneAlternativas && (
+            <button
+              onClick={() => setExpanded(v => !v)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+          )}
+        </TableCell>
+      </TableRow>
+
+      {/* Fila expandida: comparación de precios */}
+      <AnimatePresence>
+        {expanded && (
+          <TableRow>
+            <TableCell colSpan={11} className="p-0">
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="px-6 py-3 bg-muted/30 border-t">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">
+                    Comparación de precios para este SKU:
+                  </p>
+                  <div className="flex gap-4 flex-wrap">
+                    {item.otros_proveedores
+                      .slice()
+                      .sort((a, b) => a.precio_compra - b.precio_compra)
+                      .map(p => (
+                        <div
+                          key={p.proveedor}
+                          className={cn(
+                            'text-xs px-3 py-2 rounded-md border',
+                            p.es_proveedor_principal
+                              ? 'border-primary bg-primary/10 font-semibold'
+                              : 'border-border bg-background',
+                          )}
+                        >
+                          <div>{p.proveedor}</div>
+                          <div className="font-bold">${p.precio_compra.toFixed(2)}</div>
+                          <div className="text-muted-foreground">
+                            {new Date(p.fecha_ultima_compra).toLocaleDateString()}
+                          </div>
+                          {p.es_proveedor_principal && (
+                            <div className="text-primary text-xs">Principal</div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </motion.div>
+            </TableCell>
+          </TableRow>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// ─── página principal ─────────────────────────────────────────────────────────
+
+type FiltroUrgencia = 'todos' | 'urgente' | 'alta' | 'media' | 'baja';
 
 export function Compras() {
-  const { data, isLoading, error } = useSugerenciasCompra();
-  const [busqueda, setBusqueda] = useState('');
+  const [proveedorSeleccionado, setProveedorSeleccionado] = useState<string | null>(null);
+  const [filtroUrgencia, setFiltroUrgencia] = useState<FiltroUrgencia>('todos');
+  const [pedido, setPedido] = useState<Record<string, number>>({});   // nombre → cantidad
 
-  if (error) {
-    return (
-      <div className="text-center py-8 text-destructive">
-        Error al cargar datos: {error.message}
-      </div>
-    );
-  }
+  const { data: urgencias, isLoading: loadingUrgencias, refetch: refetchUrgencias } =
+    useUrgenciasProveedor();
+  const { data: sugerencias, isLoading: loadingSugerencias } =
+    useSugerenciasV2(proveedorSeleccionado ?? undefined);
+  const exportPedido = useExportPedido();
 
-  const sugerencias: any[] = data && Array.isArray(data) ? data : [];
-
-  const sugerenciasFiltradas = useMemo(() => {
-    const q = busqueda.toLowerCase().trim();
-    if (!q) return sugerencias;
-    return sugerencias.filter((s: any) =>
-      (s.nombre || '').toLowerCase().includes(q) ||
-      (s.proveedor || '').toLowerCase().includes(q) ||
-      (s.familia || '').toLowerCase().includes(q)
-    );
-  }, [sugerencias, busqueda]);
-
-  const handleExportarCSV = () => {
-    const headers = ['Prioridad', 'Producto', 'ABC', 'Tendencia', 'Familia', 'Proveedor', 'Stock', 'Venta/dia', 'Demanda proy. 7d', 'Dias stock', 'ROP', 'Sugerido', 'ROI Est.'];
-    const rows = sugerencias.map((p: any) => [
-      p.prioridad || '',
-      p.nombre || '',
-      p.clasificacion_abc || '',
-      p.tendencia || '',
-      p.familia || '',
-      p.proveedor || '',
-      String(p.cantidad_disponible || 0),
-      String(p.venta_diaria || 0),
-      String(p.demanda_proyectada_7d ?? ''),
-      String(p.dias_stock?.toFixed(0) || 0),
-      String(p.punto_reorden ?? ''),
-      String(p.cantidad_sugerida || 0),
-      String(p.roi_estimado || 0),
-    ]);
-    exportToCSV(headers, rows, `sugerencias_compra_${new Date().toISOString().slice(0, 10)}.csv`);
-    toast.success('Sugerencias exportadas como CSV');
+  // Cuando cambia el proveedor, reiniciamos el pedido
+  const handleProveedorClick = (prov: string) => {
+    const nuevo = prov === proveedorSeleccionado ? null : prov;
+    setProveedorSeleccionado(nuevo);
+    setPedido({});
   };
 
-  const inversionTotal = sugerencias.reduce((acc, s) => acc + (s.costo_estimado || 0), 0);
-  const roiTotal = sugerencias.reduce((acc, s) => acc + (s.roi_estimado || 0), 0);
-  const claseARiesgo = sugerencias.filter((s) => s.clasificacion_abc === 'A' && s.dias_stock <= 7).length;
+  // Sugerencias filtradas por urgencia
+  const lista: Sugerencia[] = useMemo(() => {
+    const raw: Sugerencia[] = Array.isArray(sugerencias) ? sugerencias : [];
+    if (filtroUrgencia === 'todos') return raw;
+    return raw.filter(s => s.urgencia === filtroUrgencia);
+  }, [sugerencias, filtroUrgencia]);
+
+  // Inicializar cantidad pedido con el sugerido
+  const getCantidad = (nombre: string, sugerido: number) =>
+    pedido[nombre] !== undefined ? pedido[nombre] : sugerido;
+
+  const itemsMarcados = useMemo(
+    () => Object.entries(pedido).filter(([, qty]) => qty > 0),
+    [pedido]
+  );
+
+  const costoTotalPedido = useMemo(() => {
+    return itemsMarcados.reduce((acc, [nombre, qty]) => {
+      const item = lista.find(s => s.nombre === nombre);
+      return acc + qty * (item?.precio_ultimo ?? 0);
+    }, 0);
+  }, [itemsMarcados, lista]);
+
+  const handleCheck = (nombre: string, sugerido: number, checked: boolean) => {
+    setPedido(prev => ({ ...prev, [nombre]: checked ? sugerido : 0 }));
+  };
+
+  const handleExport = () => {
+    if (!proveedorSeleccionado) return;
+    exportPedido.mutate(proveedorSeleccionado);
+  };
+
+  const isLoading = loadingUrgencias || loadingSugerencias;
 
   return (
     <div className="space-y-6">
-      {/* Título */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold tracking-tight">Sugerencias de Compra</h1>
-        <p className="text-muted-foreground">
-          Productos que necesitan reposición basado en ventas, stock y análisis ABC
-        </p>
+      {/* Encabezado */}
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Compras</h1>
+          <p className="text-muted-foreground">
+            Qué pedir, a quién, y cuánto — basado en 40 meses de historial real
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetchUrgencias()}
+          disabled={loadingUrgencias}
+        >
+          <RefreshCw className={cn('h-4 w-4 mr-2', loadingUrgencias && 'animate-spin')} />
+          Actualizar
+        </Button>
       </motion.div>
 
-      {/* Filtros */}
-      <FilterPanel />
-
-      {isLoading ? (
-        <div className="grid gap-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <Skeleton className="h-[120px]" />
-            <Skeleton className="h-[120px]" />
-            <Skeleton className="h-[120px]" />
+      {/* Tarjetas de proveedores */}
+      <div>
+        <p className="text-sm text-muted-foreground mb-3 font-medium">
+          Seleccioná un proveedor para ver sus productos:
+        </p>
+        {loadingUrgencias ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-[100px]" />
+            ))}
           </div>
-          <Skeleton className="h-[400px]" />
-        </div>
-      ) : sugerencias.length > 0 ? (
-        <>
-          {/* Resumen financiero */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Inversión total requerida</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-primary">${inversionTotal.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{sugerencias.length} productos a reponer</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                    ROI estimado total
-                    <MetricTooltip text="Retorno bruto estimado = (precio_venta - precio_compra) x cantidad_sugerida. Basado en el margen historico del producto." />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-emerald-600">${roiTotal.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Retorno bruto potencial</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <Card className={cn(claseARiesgo > 0 && 'border-red-500/50')}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                    Productos clase A en riesgo
-                    <MetricTooltip text="Pareto: A = top 80% de ventas (alta rotacion). Estos productos son criticos y no deben quedarse sin stock." />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{claseARiesgo}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Stock menor a 7 días</p>
-                </CardContent>
-              </Card>
-            </motion.div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {(urgencias as UrgenciaProveedor[] | undefined)?.map(prov => (
+              <ProveedorCard
+                key={prov.proveedor}
+                prov={prov}
+                selected={prov.proveedor === proveedorSeleccionado}
+                onClick={() => handleProveedorClick(prov.proveedor)}
+              />
+            ))}
           </div>
+        )}
+      </div>
 
-          {/* Resumen por prioridad */}
-          <div className="grid gap-4 md:grid-cols-4">
-            {Object.entries(prioridadConfig).map(([key, config], index) => {
-              const count = sugerencias.filter((s) => s.prioridad === key).length;
-              return (
-                <motion.div key={key} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}>
-                  <Card className={cn(prioridadesAltas.includes(key) && 'border-red-500/50')}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                        <span>{config.icon}</span> Prioridad {config.label}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold">{count}</div>
-                      <p className="text-xs text-muted-foreground">productos a reponer</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
+      {/* Panel de proveedor seleccionado */}
+      <AnimatePresence mode="wait">
+        {proveedorSeleccionado && (
+          <motion.div
+            key={proveedorSeleccionado}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-4"
+          >
+            {/* Barra de acciones */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold">{proveedorSeleccionado}</span>
+                {/* Filtros de urgencia */}
+                {(['todos', 'urgente', 'alta', 'media', 'baja'] as FiltroUrgencia[]).map(u => (
+                  <button
+                    key={u}
+                    onClick={() => setFiltroUrgencia(u)}
+                    className={cn(
+                      'text-xs px-3 py-1 rounded-full border transition-all',
+                      filtroUrgencia === u
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border hover:border-primary',
+                    )}
+                  >
+                    {u === 'todos' ? 'Todos' : urgenciaConfig[u]?.label ?? u}
+                    {u !== 'todos' && (
+                      <span className="ml-1 opacity-70">
+                        ({lista.filter(s => s.urgencia === u).length || (Array.isArray(sugerencias) ? (sugerencias as Sugerencia[]).filter(s => s.urgencia === u).length : 0)})
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
 
-          {/* Productos urgentes */}
-          {sugerencias.filter((s) => prioridadesAltas.includes(s.prioridad)).length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <Card className="border-red-500/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-red-600">
-                    <AlertTriangle className="h-5 w-5" /> Prioridad Alta / Urgente
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {sugerencias
-                      .filter((s) => prioridadesAltas.includes(s.prioridad))
-                      .slice(0, 6)
-                      .map((producto: any, index: number) => (
-                        <motion.div key={producto.nombre} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 * index }} className="p-4 rounded-lg border bg-red-500/5 border-red-500/20">
-                          <div className="flex items-center justify-between">
-                            <div className="font-medium truncate flex-1"><ProductLink nombre={producto.nombre} /></div>
-                            <AbcBadge abc={producto.clasificacion_abc} />
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            Stock: {producto.cantidad_disponible} | Venta diaria: {producto.venta_diaria}
-                          </div>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="destructive">Comprar: {producto.cantidad_sugerida}</Badge>
-                            <TendenciaIndicator tendencia={producto.tendencia} />
-                          </div>
-                        </motion.div>
-                      ))}
+              {/* Resumen del pedido + exportar */}
+              <div className="flex items-center gap-3">
+                {itemsMarcados.length > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">{itemsMarcados.length}</span> ítems seleccionados ·{' '}
+                    <span className="font-semibold text-primary">
+                      ${costoTotalPedido.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Top 10 por ROI */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Top 10 productos por ROI estimado</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Producto</TableHead>
-                      <TableHead>ABC</TableHead>
-                      <TableHead>Tendencia</TableHead>
-                      <TableHead>Proveedor</TableHead>
-                      <TableHead className="text-right">ROI Estimado</TableHead>
-                      <TableHead className="text-right">Inversión</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sugerencias
-                      .slice()
-                      .sort((a, b) => (b.roi_estimado || 0) - (a.roi_estimado || 0))
-                      .slice(0, 10)
-                      .map((p: any, i: number) => (
-                        <TableRow key={i}>
-                          <TableCell className="max-w-[200px]"><ProductLink nombre={p.nombre} className="truncate block" /></TableCell>
-                          <TableCell><AbcBadge abc={p.clasificacion_abc} /></TableCell>
-                          <TableCell><TendenciaIndicator tendencia={p.tendencia} /></TableCell>
-                          <TableCell>{p.proveedor || '-'}</TableCell>
-                          <TableCell className="text-right text-emerald-600 font-semibold">${Number(p.roi_estimado || 0).toLocaleString()}</TableCell>
-                          <TableCell className="text-right">${Number(p.costo_estimado || 0).toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Tabla completa */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" /> Todas las Sugerencias de Compra
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <div className="relative w-full md:w-64">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar producto, proveedor o familia..."
-                        value={busqueda}
-                        onChange={(e) => setBusqueda(e.target.value)}
-                        className="pl-9 h-9"
-                      />
-                    </div>
-                    <Button variant="outline" size="sm" onClick={handleExportarCSV}>
-                      <Download className="h-4 w-4 mr-1" /> CSV
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Prioridad</TableHead>
-                      <TableHead>Producto</TableHead>
-                      <TableHead>
-                        ABC
-                        <MetricTooltip text="Pareto: A = top 80% de ventas (alta rotacion), B = siguiente 15%, C = ultimo 5%. Los productos A son criticos y no deben quedarse sin stock." />
-                      </TableHead>
-                      <TableHead>
-                        Tendencia
-                        <MetricTooltip text="Compara la venta promedio de los ultimos 7 dias vs los 7 dias anteriores. Creciente: +10%, Decreciente: -10%, Estable: entre -10% y +10%." />
-                      </TableHead>
-                      <TableHead>Familia</TableHead>
-                      <TableHead>Proveedor</TableHead>
-                      <TableHead className="text-right">Stock</TableHead>
-                      <TableHead className="text-right">Venta/dia</TableHead>
-                      <TableHead className="text-right">
-                        Dem. proy. 7d
-                        <MetricTooltip text="Demanda proyectada (unidades) para los proximos 7 dias segun forecast. Cuando disponible, la sugerencia usa esta proyeccion en lugar del historico." />
-                      </TableHead>
-                      <TableHead className="text-right">
-                        Dias stock
-                        <MetricTooltip text="Stock actual / venta diaria promedio (ultimos 30 dias). Indica cuantos dias dura el inventario actual al ritmo de venta actual." />
-                      </TableHead>
-                      <TableHead className="text-right">
-                        ROP
-                        <MetricTooltip text="Punto de reorden: stock minimo al que debes llegar antes de pedir. ROP = venta_diaria x (lead_time + safety_stock)." />
-                      </TableHead>
-                      <TableHead className="text-right">Sugerido</TableHead>
-                      <TableHead className="text-right">
-                        ROI Est.
-                        <MetricTooltip text="Retorno bruto estimado = (precio_venta - precio_compra) x cantidad_sugerida. Basado en el margen historico del producto." />
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sugerenciasFiltradas.map((producto: any, index: number) => {
-                      const cfg = prioridadConfig[producto.prioridad] || { color: 'default' as const, icon: '', label: producto.prioridad };
-                      return (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <Badge variant={cfg.color}>{cfg.icon} {cfg.label}</Badge>
-                          </TableCell>
-                          <TableCell className="max-w-[180px]"><ProductLink nombre={producto.nombre} className="truncate block" /></TableCell>
-                          <TableCell><AbcBadge abc={producto.clasificacion_abc} /></TableCell>
-                          <TableCell><TendenciaIndicator tendencia={producto.tendencia} /></TableCell>
-                          <TableCell>{producto.familia || '-'}</TableCell>
-                          <TableCell>{producto.proveedor || '-'}</TableCell>
-                          <TableCell className="text-right">
-                            <span className={cn(producto.cantidad_disponible === 0 && 'text-red-600 font-bold')}>
-                              {producto.cantidad_disponible}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">{producto.venta_diaria}</TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {producto.demanda_proyectada_7d != null ? producto.demanda_proyectada_7d.toFixed(0) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className={cn(
-                              producto.dias_stock <= 7 && 'text-red-600',
-                              producto.dias_stock > 7 && producto.dias_stock <= 14 && 'text-yellow-600'
-                            )}>
-                              {producto.dias_stock?.toFixed(0) || 0}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">{producto.punto_reorden ?? '-'}</TableCell>
-                          <TableCell className="text-right font-bold text-primary">{producto.cantidad_sugerida}</TableCell>
-                          <TableCell className="text-right text-emerald-600">${Number(producto.roi_estimado || 0).toLocaleString()}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </>
-      ) : (
-        <Card>
-          <CardContent className="py-12">
-            <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
-              <Package className="h-12 w-12" />
-              <p>No hay sugerencias de compra en este momento</p>
+                )}
+                <Button
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={exportPedido.isPending}
+                >
+                  <Download className={cn('h-4 w-4 mr-2', exportPedido.isPending && 'animate-spin')} />
+                  Exportar pedido Excel
+                </Button>
+              </div>
             </div>
+
+            {/* Tabla */}
+            {loadingSugerencias ? (
+              <Skeleton className="h-[400px]" />
+            ) : lista.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 flex flex-col items-center gap-3 text-muted-foreground">
+                  <Package className="h-10 w-10" />
+                  <p>
+                    {filtroUrgencia === 'todos'
+                      ? 'No hay productos con necesidad de reposición para este proveedor'
+                      : `No hay productos con urgencia "${urgenciaConfig[filtroUrgencia]?.label}" para este proveedor`}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ShoppingCart className="h-5 w-5" />
+                    {lista.length} producto{lista.length !== 1 ? 's' : ''}
+                    {filtroUrgencia !== 'todos' && ` · ${urgenciaConfig[filtroUrgencia]?.label}`}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-8"></TableHead>
+                          <TableHead>Urgencia</TableHead>
+                          <TableHead>Producto</TableHead>
+                          <TableHead>ABC</TableHead>
+                          <TableHead className="text-right">Stock</TableHead>
+                          <TableHead className="text-right">Días</TableHead>
+                          <TableHead className="text-right">Velocidad</TableHead>
+                          <TableHead className="text-right">Último precio</TableHead>
+                          <TableHead className="text-right">Cant. pedido</TableHead>
+                          <TableHead className="text-right">Costo est.</TableHead>
+                          <TableHead className="w-8"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {lista.map(item => (
+                          <FilaSugerencia
+                            key={item.nombre}
+                            item={item}
+                            checked={(pedido[item.nombre] ?? 0) > 0}
+                            cantidadPedido={getCantidad(item.nombre, item.cantidad_sugerida)}
+                            onCheck={checked => handleCheck(item.nombre, item.cantidad_sugerida, checked)}
+                            onCantidadChange={qty => setPedido(prev => ({ ...prev, [item.nombre]: qty }))}
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Alerta si hay productos sin precio */}
+            {lista.some(s => !s.precio_ultimo) && (
+              <div className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 px-4 py-2 rounded-md">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                Algunos productos no tienen precio de compra registrado. El costo estimado puede estar incompleto.
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Estado inicial — sin proveedor seleccionado */}
+      {!proveedorSeleccionado && !isLoading && (
+        <Card>
+          <CardContent className="py-16 flex flex-col items-center gap-3 text-muted-foreground">
+            <ShoppingCart className="h-12 w-12 opacity-30" />
+            <p className="text-lg">Seleccioná un proveedor arriba para ver sus productos</p>
+            <p className="text-sm">
+              Los productos están ordenados por urgencia de reposición según historial de 40 meses
+            </p>
           </CardContent>
         </Card>
       )}

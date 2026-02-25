@@ -129,9 +129,6 @@ export const apiService = {
   getAlertas: (filters: FilterParams) =>
     api.get<any[]>('/api/dashboard/alertas', filters),
 
-  getSaludInventario: () =>
-    api.get<{ salud_porcentaje: number; top_criticos: { nombre: string; dias_cobertura?: number; estado_stock?: string }[]; total_productos: number }>('/api/dashboard/salud-inventario'),
-
   // Ventas
   getVentas: (filters: FilterParams & PaginationParams) =>
     api.get<VentasResponse>('/api/ventas', filters),
@@ -173,36 +170,23 @@ export const apiService = {
   getRankingVendedores: (filters: FilterParams) =>
     api.get<any>('/api/vendedores', filters),
 
-  // Compras
+  // Compras (v1 legacy)
   getSugerenciasCompra: (filters: FilterParams) =>
     api.get<any>('/api/compras/sugerencias', filters),
 
-  getResumenProveedoresCompra: (filters: FilterParams) =>
-    api.get<any[]>('/api/compras/proveedores', filters),
+  // Compras v2 — historial completo
+  getSugerenciasV2: (proveedor?: string) =>
+    api.get<any[]>('/api/compras/v2/sugerencias', proveedor ? { proveedor } : undefined),
 
-  getOrdenCompraProveedor: (
-    proveedor: string,
-    filters: FilterParams,
-    prioridadMinima?: string
-  ) =>
-    api.get<any>(`/api/compras/orden/${encodeURIComponent(proveedor)}`, {
-      ...filters,
-      prioridad_minima: prioridadMinima,
-    }),
+  getUrgenciasProveedor: () =>
+    api.get<any[]>('/api/compras/v2/urgencias-proveedor'),
+
+  exportPedidoExcel: (proveedor: string) =>
+    api.getBlob('/api/compras/v2/export-pedido', { proveedor }),
 
   // Insights
   getInsights: (filters: FilterParams) =>
     api.get<any>('/api/insights', filters),
-
-  // Facturas proveedor
-  getFacturasProveedor: (params?: { proveedor?: string; dias_plazo?: number; estado?: string }) =>
-    api.get<any[]>('/api/facturas-proveedor', params),
-
-  getFacturasProveedorResumen: (params?: { proveedor?: string; dias_plazo?: number }) =>
-    api.get<any>('/api/facturas-proveedor/resumen', params),
-
-  getProductoDetalle: (nombre: string) =>
-    api.get<any>(`/api/inventario/producto/${encodeURIComponent(nombre)}`),
 
   // Export
   exportExcel: (filters: FilterParams) =>

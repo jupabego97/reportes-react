@@ -16,6 +16,7 @@ from app.routes.auth import router as auth_router
 from app.routes.proveedores import router as proveedores_router
 from app.routes.facturas_proveedor import router as facturas_proveedor_router
 from app.routes.inventario import router as inventario_router
+from app.routes.compras_v2 import router as compras_v2_router
 
 settings = get_settings()
 
@@ -46,6 +47,7 @@ app.include_router(facturas_proveedor_router)
 app.include_router(inventario_router)
 app.include_router(export_router)
 app.include_router(insights_router)
+app.include_router(compras_v2_router)
 
 
 @app.get("/")
