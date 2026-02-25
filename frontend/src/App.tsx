@@ -6,11 +6,14 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { CentroDecisiones } from './pages/CentroDecisiones';
 import { Margenes } from './pages/Margenes';
 import { Vendedores } from './pages/Vendedores';
 import { Proveedores } from './pages/Proveedores';
 import { Compras } from './pages/Compras';
 import { Datos } from './pages/Datos';
+import { FacturasProveedor } from './pages/FacturasProveedor';
+import { ProductoDetalle } from './pages/ProductoDetalle';
 import { initializeTheme } from './stores/useThemeStore';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -18,14 +21,13 @@ import { TooltipProvider } from './components/ui/tooltip';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30000, // 30 segundos
+      staleTime: 30000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
   },
 });
 
-// Página de no autorizado
 function Unauthorized() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -39,7 +41,6 @@ function Unauthorized() {
 }
 
 function App() {
-  // Inicializar tema al cargar
   useEffect(() => {
     initializeTheme();
   }, []);
@@ -49,11 +50,9 @@ function App() {
       <TooltipProvider>
         <BrowserRouter>
           <Routes>
-            {/* Rutas públicas */}
             <Route path="/login" element={<Login />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
 
-            {/* Rutas protegidas */}
             <Route
               path="/"
               element={
@@ -64,13 +63,15 @@ function App() {
             >
               <Route index element={<Dashboard />} />
               <Route path="compras" element={<Compras />} />
+              <Route path="decisiones" element={<CentroDecisiones />} />
               <Route path="proveedores" element={<Proveedores />} />
+              <Route path="facturas" element={<FacturasProveedor />} />
               <Route path="margenes" element={<Margenes />} />
               <Route path="vendedores" element={<Vendedores />} />
               <Route path="datos" element={<Datos />} />
+              <Route path="producto/:nombre" element={<ProductoDetalle />} />
             </Route>
 
-            {/* Redirección por defecto */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

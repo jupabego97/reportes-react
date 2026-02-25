@@ -10,11 +10,12 @@ import {
   ChevronRight,
   LogOut,
   User,
-  Settings,
   Truck,
   PackageSearch,
+  Target,
   Menu,
   X,
+  Receipt,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -37,7 +38,9 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Compras', href: '/compras', icon: PackageSearch },
+  { name: 'Centro de decisiones', href: '/decisiones', icon: Target },
   { name: 'Proveedores', href: '/proveedores', icon: Truck },
+  { name: 'Facturas proveedor', href: '/facturas', icon: Receipt },
   { name: 'Márgenes', href: '/margenes', icon: TrendingUp },
   { name: 'Vendedores', href: '/vendedores', icon: Users },
   { name: 'Datos', href: '/datos', icon: Table },
@@ -191,10 +194,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             <DropdownMenuItem disabled>
               <User className="mr-2 h-4 w-4" />
               <span>{user?.username}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Configuracion</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-red-600">

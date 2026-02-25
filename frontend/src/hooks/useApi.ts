@@ -38,6 +38,7 @@ export const queryKeys = {
   dashboard: (filters: FilterParams) => ['dashboard', filters] as const,
   metricas: (filters: FilterParams) => ['metricas', filters] as const,
   alertas: (filters: FilterParams) => ['alertas', filters] as const,
+  saludInventario: ['salud-inventario'] as const,
   ventas: (filters: FilterParams & PaginationParams) => ['ventas', filters] as const,
   ventasPorDia: (filters: FilterParams) => ['ventas-por-dia', filters] as const,
   ventasPorVendedor: (filters: FilterParams) => ['ventas-por-vendedor', filters] as const,
@@ -50,9 +51,11 @@ export const queryKeys = {
   abc: (filters: FilterParams) => ['abc', filters] as const,
   rankingVendedores: (filters: FilterParams) => ['ranking-vendedores', filters] as const,
   sugerenciasCompra: (filters: FilterParams) => ['sugerencias-compra', filters] as const,
+  resumenComprasProveedores: (filters: FilterParams) => ['resumen-compras-proveedores', filters] as const,
   insights: (filters: FilterParams) => ['insights', filters] as const,
-  sugerenciasV2: (proveedor?: string) => ['sugerencias-v2', proveedor] as const,
-  urgenciasProveedor: ['urgencias-proveedor'] as const,
+  facturasProveedor: (params?: Record<string, unknown>) => ['facturas-proveedor', params ?? {}] as const,
+  facturasProveedorResumen: (params?: Record<string, unknown>) => ['facturas-proveedor-resumen', params ?? {}] as const,
+  productoDetalle: (nombre: string) => ['producto-detalle', nombre] as const,
 };
 
 export function useMetricas() {
@@ -69,7 +72,15 @@ export function useAlertas() {
   return useQuery({
     queryKey: queryKeys.alertas(filters),
     queryFn: () => apiService.getAlertas(filters),
-    staleTime: 60000, // 1 minuto
+    staleTime: 60000,
+  });
+}
+
+export function useSaludInventario() {
+  return useQuery({
+    queryKey: queryKeys.saludInventario,
+    queryFn: () => apiService.getSaludInventario(),
+    staleTime: 60000,
   });
 }
 
@@ -183,6 +194,15 @@ export function useSugerenciasCompra() {
   });
 }
 
+export function useResumenComprasProveedores() {
+  const filters = useFilterParams();
+  return useQuery({
+    queryKey: queryKeys.resumenComprasProveedores(filters),
+    queryFn: () => apiService.getResumenProveedoresCompra(filters),
+    staleTime: 60000,
+  });
+}
+
 export function useInsights() {
   const filters = useFilterParams();
   return useQuery({
@@ -192,39 +212,46 @@ export function useInsights() {
   });
 }
 
-// Compras V2 hooks
-export function useSugerenciasV2(proveedor?: string) {
+export function useFacturasProveedor(params?: { proveedor?: string; dias_plazo?: number; estado?: string }) {
   return useQuery({
-    queryKey: queryKeys.sugerenciasV2(proveedor),
-    queryFn: () => apiService.getSugerenciasV2(proveedor),
-    staleTime: 120000, // 2 minutos — query más pesada
+    queryKey: queryKeys.facturasProveedor(params),
+    queryFn: () => apiService.getFacturasProveedor(params),
+    staleTime: 60000,
   });
 }
 
-export function useUrgenciasProveedor() {
+export function useFacturasProveedorResumen(params?: { proveedor?: string; dias_plazo?: number }) {
   return useQuery({
-    queryKey: queryKeys.urgenciasProveedor,
-    queryFn: () => apiService.getUrgenciasProveedor(),
-    staleTime: 120000,
+    queryKey: queryKeys.facturasProveedorResumen(params),
+    queryFn: () => apiService.getFacturasProveedorResumen(params),
+    staleTime: 60000,
   });
 }
 
-export function useExportPedido() {
+export function useProductoDetalle(nombre: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.productoDetalle(nombre || ''),
+    queryFn: () => apiService.getProductoDetalle(nombre!),
+    enabled: !!nombre,
+    staleTime: 60000,
+  });
+}
+
+export function useGenerarOrdenCompra() {
+  const filters = useFilterParams();
   return useMutation({
-    mutationFn: (proveedor: string) => apiService.exportPedidoExcel(proveedor),
-    onSuccess: (blob, proveedor) => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `pedido_${proveedor.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success(`Pedido de ${proveedor} descargado`);
+    mutationFn: ({
+      proveedor,
+      prioridadMinima,
+    }: {
+      proveedor: string;
+      prioridadMinima?: string;
+    }) => apiService.getOrdenCompraProveedor(proveedor, filters, prioridadMinima),
+    onSuccess: () => {
+      toast.success('Orden de compra generada');
     },
     onError: (error) => {
-      toast.error(`Error al exportar pedido: ${(error as Error).message}`);
+      toast.error(`Error al generar orden: ${error.message}`);
     },
   });
 }
@@ -296,3 +323,41 @@ export function useExportPDF() {
   });
 }
 
+
+// ─── Compras V2 hooks ─────────────────────────────────────────────────────────
+
+export function useSugerenciasV2(proveedor?: string) {
+  return useQuery({
+    queryKey: ['sugerencias-v2', proveedor] as const,
+    queryFn: () => apiService.getSugerenciasV2(proveedor),
+    staleTime: 120000,
+  });
+}
+
+export function useUrgenciasProveedor() {
+  return useQuery({
+    queryKey: ['urgencias-proveedor'] as const,
+    queryFn: () => apiService.getUrgenciasProveedor(),
+    staleTime: 120000,
+  });
+}
+
+export function useExportPedido() {
+  return useMutation({
+    mutationFn: (proveedor: string) => apiService.exportPedidoExcel(proveedor),
+    onSuccess: (blob, proveedor) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pedido_${proveedor.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success(`Pedido de ${proveedor} descargado`);
+    },
+    onError: (error) => {
+      toast.error(`Error al exportar pedido: ${(error as Error).message}`);
+    },
+  });
+}
