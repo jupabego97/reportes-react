@@ -16,9 +16,7 @@ import {
 import {
   Tooltip, TooltipContent, TooltipTrigger,
 } from '../components/ui/tooltip';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../components/ui/select';
+import { Select } from '../components/ui/select';
 import { useUrgenciasProveedor, useSugerenciasV2, useExportPedido } from '../hooks/useApi';
 import { cn } from '../lib/utils';
 
@@ -439,31 +437,24 @@ export function Compras() {
             <Skeleton className="h-10 w-[280px]" />
           ) : (
             <Select
+              className="w-[280px]"
               value={proveedorSeleccionado ?? ''}
-              onValueChange={(v) => { setProveedorSeleccionado(v); setPedido({}); setFiltroUrgencia('todos'); }}
-            >
-              <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Seleccioná un proveedor…" />
-              </SelectTrigger>
-              <SelectContent>
-                {(urgencias as UrgenciaProveedor[] | undefined)?.length === 0 && (
-                  <SelectItem value="__empty__" disabled>Sin datos de proveedores</SelectItem>
-                )}
-                {(urgencias as UrgenciaProveedor[] | undefined)?.map(prov => (
-                  <SelectItem key={prov.proveedor} value={prov.proveedor}>
-                    <span className="flex items-center gap-2">
-                      {prov.proveedor}
-                      {prov.urgente > 0 && (
-                        <span className="text-xs text-red-600 font-semibold">🔴 {prov.urgente}</span>
-                      )}
-                      {prov.alta > 0 && (
-                        <span className="text-xs text-orange-500 font-semibold">🟠 {prov.alta}</span>
-                      )}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Seleccioná un proveedor…"
+              options={(urgencias as UrgenciaProveedor[] | undefined ?? []).map(prov => ({
+                value: prov.proveedor,
+                label: [
+                  prov.proveedor,
+                  prov.urgente > 0 ? `🔴 ${prov.urgente}` : '',
+                  prov.alta > 0 ? `🟠 ${prov.alta}` : '',
+                ].filter(Boolean).join('  '),
+              }))}
+              onChange={(e) => {
+                const v = e.target.value;
+                setProveedorSeleccionado(v || null);
+                setPedido({});
+                setFiltroUrgencia('todos');
+              }}
+            />
           )}
           {proveedorSeleccionado && (
             <Button
