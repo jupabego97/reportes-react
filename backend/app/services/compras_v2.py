@@ -8,7 +8,6 @@ Mejoras sobre v1:
 - Comparación de precios entre proveedores por SKU
 - Resumen de urgencias por proveedor para las cards de la UI
 """
-import asyncio
 import math
 from datetime import date, datetime
 from typing import Dict, List, Optional, Tuple
@@ -248,13 +247,11 @@ class ComprasV2Service:
         Calcula sugerencias de compra usando historial completo de 40 meses.
         Si se pasa `proveedor`, filtra solo los SKUs de ese proveedor.
         """
-        historial, stock, familias, precios, moda = await asyncio.gather(
-            self._get_ventas_historicas(),
-            self._get_stock_actual(),
-            self._get_familias(),
-            self._get_precios_proveedor(),
-            self._get_proveedor_moda(),
-        )
+        historial = await self._get_ventas_historicas()
+        stock = await self._get_stock_actual()
+        familias = await self._get_familias()
+        precios = await self._get_precios_proveedor()
+        moda = await self._get_proveedor_moda()
 
         # Total de ventas por producto para ABC (últimos 12 meses)
         total_ventas_12m: Dict[str, float] = {}
