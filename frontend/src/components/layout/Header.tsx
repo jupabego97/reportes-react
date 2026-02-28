@@ -26,6 +26,7 @@ const routeNames: Record<string, string> = {
   'compras': 'Sugerencias de Compra',
   'insights': 'Insights de Inventario',
   'datos': 'Datos Detallados',
+  'analista': 'Analista de Datos',
 };
 
 interface HeaderProps {

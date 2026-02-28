@@ -223,4 +223,11 @@ export const apiService = {
 
   exportPDF: (filters: FilterParams) =>
     api.getBlob('/api/export/pdf', filters),
+
+  // Analista IA
+  preguntarAnalista: (pregunta: string, historial?: Array<{ role: string; content: string }>) =>
+    api.post<{ respuesta: string; sql: string | null; datos: Record<string, any>[] | null; error: string | null }>(
+      '/api/analista/preguntar',
+      { pregunta, historial },
+    ),
 };

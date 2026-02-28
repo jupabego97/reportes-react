@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   Receipt,
+  MessageSquareText,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -44,6 +45,7 @@ const navigation = [
   { name: 'Márgenes', href: '/margenes', icon: TrendingUp },
   { name: 'Vendedores', href: '/vendedores', icon: Users },
   { name: 'Datos', href: '/datos', icon: Table },
+  { name: 'Analista', href: '/analista', icon: MessageSquareText },
 ];
 
 const roleColors: Record<string, string> = {
