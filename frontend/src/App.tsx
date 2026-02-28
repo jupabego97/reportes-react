@@ -14,6 +14,7 @@ import { Compras } from './pages/Compras';
 import { Datos } from './pages/Datos';
 import { FacturasProveedor } from './pages/FacturasProveedor';
 import { ProductoDetalle } from './pages/ProductoDetalle';
+import { Analista } from './pages/Analista';
 import { initializeTheme } from './stores/useThemeStore';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -69,6 +70,7 @@ function App() {
               <Route path="margenes" element={<Margenes />} />
               <Route path="vendedores" element={<Vendedores />} />
               <Route path="datos" element={<Datos />} />
+              <Route path="analista" element={<Analista />} />
               <Route path="producto/:nombre" element={<ProductoDetalle />} />
             </Route>
 
