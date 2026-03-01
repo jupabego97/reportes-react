@@ -222,7 +222,7 @@ class AnalistaService:
         )
 
         response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-flash-latest",
             contents=user_message,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT_ANSWER,
