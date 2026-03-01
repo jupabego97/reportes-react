@@ -35,12 +35,12 @@ interface ChatMessage {
 }
 
 const SUGGESTED_QUESTIONS = [
-  '¿Cuál fue el producto más vendido este mes?',
-  '¿Qué vendedor tiene el mayor margen?',
-  '¿Cuáles productos tienen stock bajo?',
-  '¿Cómo han sido las ventas por familia?',
-  '¿Cuáles son los 10 productos con menor stock?',
-  '¿Cuál es el margen promedio por proveedor?',
+  '¿Qué le debo comprar a JALTECH en este momento?',
+  '¿Qué productos están en riesgo de agotarse?',
+  '¿Cuál vendedor vendió más este mes y con qué margen?',
+  '¿Qué proveedor tiene mejores precios para los productos más vendidos?',
+  '¿Cómo van las ventas por familia este mes vs el anterior?',
+  '¿Cuáles productos tienen margen negativo?',
 ];
 
 export function Analista() {
