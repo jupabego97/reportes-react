@@ -22,18 +22,22 @@ Base de datos PostgreSQL de una empresa de ventas/retail (moneda COP - pesos col
 === TABLAS ===
 
 1. reportes_ventas_30dias — Ventas de los últimos 30 días (una fila por línea de venta)
-   - nombre TEXT              -- nombre del producto (PK lógica junto con fecha_venta)
+   Columnas que EXISTEN en la tabla:
+   - nombre TEXT              -- nombre del producto
    - precio NUMERIC           -- precio unitario de venta
    - cantidad INTEGER         -- unidades vendidas en esta transacción
    - fecha_venta DATE         -- fecha de la venta
-   - total_venta NUMERIC      -- precio * cantidad
    - vendedor TEXT            -- nombre del vendedor
    - familia TEXT             -- categoría/familia del producto
    - metodo TEXT              -- método de pago (Efectivo, Tarjeta, Transferencia, etc.)
    - proveedor_moda TEXT      -- proveedor principal (el más frecuente) del producto
-   - precio_promedio_compra NUMERIC -- costo promedio de compra al proveedor
-   - margen NUMERIC           -- ganancia por unidad = precio - precio_promedio_compra
-   - margen_porcentaje NUMERIC -- % de margen = (margen / precio) * 100
+   - precio_promedio_compra NUMERIC -- costo promedio de compra al proveedor (puede ser NULL)
+
+   IMPORTANTE: Las siguientes columnas NO EXISTEN en la tabla. Debes calcularlas en SQL:
+   - total_venta            → usar: (precio * cantidad)
+   - margen                 → usar: (precio - precio_promedio_compra)
+   - margen_porcentaje      → usar: ((precio - precio_promedio_compra) / NULLIF(precio, 0)) * 100
+   - total_margen           → usar: (precio - precio_promedio_compra) * cantidad
 
 2. items — Inventario actual (una fila por producto)
    - nombre TEXT              -- nombre del producto (PK lógica, une con las demás tablas)
@@ -84,8 +88,10 @@ Base de datos PostgreSQL de una empresa de ventas/retail (moneda COP - pesos col
    - Clase C (>95%): 21 días
    Simplificación: usar 30 días como cobertura genérica si no se necesita ABC.
 
-5. MARGEN DE UN PRODUCTO:
-   precio_venta - precio_promedio_compra (columnas ya en reportes_ventas_30dias)
+5. MARGEN DE UN PRODUCTO (NO es columna, calcular en SQL):
+   - Margen unitario:    (precio - precio_promedio_compra)
+   - Margen %:           ((precio - precio_promedio_compra) / NULLIF(precio, 0)) * 100
+   - Margen total línea: (precio - precio_promedio_compra) * cantidad
 
 6. ÚLTIMO PRECIO DE COMPRA a un proveedor:
    SELECT DISTINCT ON (nombre, proveedor) nombre, proveedor, precio, fecha
@@ -249,7 +255,8 @@ class AnalistaService:
         Procesa una pregunta del usuario:
         1. Genera SQL con Gemini
         2. Ejecuta la query (solo SELECT)
-        3. Genera respuesta narrativa con Gemini
+        3. Si falla, envía el error a Gemini para que corrija el SQL (1 retry)
+        4. Genera respuesta narrativa con Gemini
         """
         sql_query = self._generate_sql(question, conversation_history)
 
@@ -264,7 +271,16 @@ class AnalistaService:
         self._validate_sql(sql_query)
         sql_query = self._enforce_limit(sql_query)
 
-        rows, columns = await self._execute_query(sql_query)
+        # Intentar ejecutar, con 1 retry si falla
+        try:
+            rows, columns = await self._execute_query(sql_query)
+        except Exception as e:
+            logger.warning("SQL falló, intentando corrección: %s", e)
+            error_msg = str(e)
+            sql_query = self._fix_sql(sql_query, error_msg)
+            self._validate_sql(sql_query)
+            sql_query = self._enforce_limit(sql_query)
+            rows, columns = await self._execute_query(sql_query)
 
         answer = self._generate_answer(question, sql_query, rows, columns)
 
@@ -305,6 +321,30 @@ class AnalistaService:
         response = self.client.models.generate_content(
             model="gemini-2.5-flash",
             contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT_SQL,
+                temperature=0.0,
+            ),
+        )
+
+        sql = response.text.strip()
+        sql = re.sub(r"^```(?:sql)?\s*", "", sql)
+        sql = re.sub(r"\s*```$", "", sql)
+        return sql.strip()
+
+    def _fix_sql(self, failed_sql: str, error_message: str) -> str:
+        """Envía el SQL fallido y el error a Gemini para que lo corrija."""
+        prompt = (
+            f"El siguiente SQL de PostgreSQL falló con un error.\n\n"
+            f"SQL:\n{failed_sql}\n\n"
+            f"Error:\n{error_message}\n\n"
+            f"Corrige el SQL para que funcione. Recuerda las columnas reales de cada tabla.\n"
+            f"Responde SOLO con el SQL corregido, sin explicación."
+        )
+
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT_SQL,
                 temperature=0.0,
