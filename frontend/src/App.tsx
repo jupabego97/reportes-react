@@ -5,20 +5,24 @@ import { Toaster } from 'sonner';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Login } from './pages/Login';
+import { Hoy } from './pages/Hoy';
 import { Dashboard } from './pages/Dashboard';
-import { CentroDecisiones } from './pages/CentroDecisiones';
 import { Margenes } from './pages/Margenes';
+import { Predicciones } from './pages/Predicciones';
+import { AnalisisABC } from './pages/AnalisisABC';
 import { Vendedores } from './pages/Vendedores';
 import { Proveedores } from './pages/Proveedores';
 import { Compras } from './pages/Compras';
+import { Inventario } from './pages/Inventario';
 import { Datos } from './pages/Datos';
 import { FacturasProveedor } from './pages/FacturasProveedor';
 import { ProductoDetalle } from './pages/ProductoDetalle';
 import { Analista } from './pages/Analista';
+import { Insights } from './pages/Insights';
+import { CEODashboard } from './pages/CEODashboard';
 import { initializeTheme } from './stores/useThemeStore';
 import { TooltipProvider } from './components/ui/tooltip';
 
-// Crear QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -62,13 +66,19 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Dashboard />} />
+              <Route index element={<Hoy />} />
+              <Route path="ventas" element={<Dashboard />} />
               <Route path="compras" element={<Compras />} />
-              <Route path="decisiones" element={<CentroDecisiones />} />
+              <Route path="decisiones" element={<Navigate to="/compras" replace />} />
+              <Route path="inventario" element={<Inventario />} />
               <Route path="proveedores" element={<Proveedores />} />
               <Route path="facturas" element={<FacturasProveedor />} />
               <Route path="margenes" element={<Margenes />} />
+              <Route path="predicciones" element={<Predicciones />} />
+              <Route path="abc" element={<AnalisisABC />} />
               <Route path="vendedores" element={<Vendedores />} />
+              <Route path="insights" element={<Insights />} />
+              <Route path="ceo" element={<CEODashboard />} />
               <Route path="datos" element={<Datos />} />
               <Route path="analista" element={<Analista />} />
               <Route path="producto/:nombre" element={<ProductoDetalle />} />

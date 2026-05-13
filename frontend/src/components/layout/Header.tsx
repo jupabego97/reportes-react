@@ -14,8 +14,10 @@ import {
 } from '../ui/dropdown-menu';
 
 const routeNames: Record<string, string> = {
-  '': 'Dashboard',
-  'decisiones': 'Centro de Decisiones',
+  '': 'Hoy',
+  'ventas': 'Dashboard de ventas',
+  'compras': 'Compras',
+  'inventario': 'Inventario',
   'margenes': 'Analisis de Margenes',
   'facturas': 'Facturas de Proveedor',
   'producto': 'Detalle de Producto',
@@ -23,8 +25,8 @@ const routeNames: Record<string, string> = {
   'abc': 'Analisis ABC',
   'vendedores': 'Ranking de Vendedores',
   'proveedores': 'Analisis de Proveedores',
-  'compras': 'Sugerencias de Compra',
   'insights': 'Insights de Inventario',
+  'ceo': 'Vista CEO',
   'datos': 'Datos Detallados',
   'analista': 'Analista de Datos',
 };
@@ -37,13 +39,19 @@ export function Header({ children }: HeaderProps) {
   const location = useLocation();
   const pathSegments = location.pathname.split('/').filter(Boolean);
 
-  const breadcrumbs = [
-    { name: 'Inicio', href: '/' },
-    ...pathSegments.map((segment, index) => ({
-      name: routeNames[segment] || segment,
-      href: '/' + pathSegments.slice(0, index + 1).join('/'),
-    })),
-  ];
+  const breadcrumbs =
+    pathSegments.length === 0
+      ? [
+          { name: 'Inicio', href: '/' },
+          { name: 'Hoy', href: '/' },
+        ]
+      : [
+          { name: 'Inicio', href: '/' },
+          ...pathSegments.map((segment, index) => ({
+            name: routeNames[segment] || decodeURIComponent(segment),
+            href: '/' + pathSegments.slice(0, index + 1).join('/'),
+          })),
+        ];
 
   return (
     <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 md:px-6">
@@ -77,7 +85,11 @@ export function Header({ children }: HeaderProps) {
         </nav>
 
         <span className="sm:hidden text-sm font-medium text-foreground truncate max-w-[150px]">
-          {breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 1].name : 'Dashboard'}
+          {pathSegments.length === 0
+            ? 'Hoy'
+            : breadcrumbs.length > 1
+              ? breadcrumbs[breadcrumbs.length - 1].name
+              : 'Hoy'}
         </span>
       </div>
 

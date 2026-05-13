@@ -56,6 +56,9 @@ export const queryKeys = {
   facturasProveedor: (params?: Record<string, unknown>) => ['facturas-proveedor', params ?? {}] as const,
   facturasProveedorResumen: (params?: Record<string, unknown>) => ['facturas-proveedor-resumen', params ?? {}] as const,
   productoDetalle: (nombre: string) => ['producto-detalle', nombre] as const,
+  inventarioResumen: ['inventario-resumen'] as const,
+  inventarioAlertas: ['inventario-alertas'] as const,
+  inventarioAgotados: ['inventario-agotados'] as const,
 };
 
 export function useMetricas() {
@@ -234,6 +237,30 @@ export function useProductoDetalle(nombre: string | undefined) {
     queryFn: () => apiService.getProductoDetalle(nombre!),
     enabled: !!nombre,
     staleTime: 60000,
+  });
+}
+
+export function useInventarioResumen() {
+  return useQuery({
+    queryKey: queryKeys.inventarioResumen,
+    queryFn: () => apiService.getInventarioResumen(),
+    staleTime: 60000,
+  });
+}
+
+export function useInventarioAlertas() {
+  return useQuery({
+    queryKey: queryKeys.inventarioAlertas,
+    queryFn: () => apiService.getInventarioAlertas(),
+    staleTime: 60000,
+  });
+}
+
+export function useInventarioAgotados() {
+  return useQuery({
+    queryKey: queryKeys.inventarioAgotados,
+    queryFn: () => apiService.getInventarioAgotados(),
+    staleTime: 120000,
   });
 }
 

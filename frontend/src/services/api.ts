@@ -214,6 +214,12 @@ export const apiService = {
   getProductoDetalle: (nombre: string) =>
     api.get<any>(`/api/inventario/producto/${encodeURIComponent(nombre)}`),
 
+  getInventarioResumen: () => api.get<any>('/api/inventario/resumen'),
+
+  getInventarioAlertas: () => api.get<any[]>('/api/inventario/alertas'),
+
+  getInventarioAgotados: () => api.get<any>('/api/inventario/agotados'),
+
   // Export
   exportExcel: (filters: FilterParams) =>
     api.getBlob('/api/export/excel', filters),

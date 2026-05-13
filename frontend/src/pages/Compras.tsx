@@ -19,6 +19,9 @@ import {
 import { Select } from '../components/ui/select';
 import { useUrgenciasProveedor, useSugerenciasV2, useExportPedido } from '../hooks/useApi';
 import { cn } from '../lib/utils';
+import { FilterPanel } from '../components/filters/FilterPanel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { CentroDecisiones } from './CentroDecisiones';
 
 // ─── tipos ────────────────────────────────────────────────────────────────────
 
@@ -363,6 +366,7 @@ export function Compras() {
   const { data: sugerencias, isLoading: loadingSugerencias } =
     useSugerenciasV2(proveedorSeleccionado ?? undefined);
   const exportPedido = useExportPedido();
+  const [tabCompras, setTabCompras] = useState<'prioridad' | 'v2'>('v2');
 
   // Cuando cambia el proveedor, reiniciamos el pedido
   const handleProveedorClick = (prov: string) => {
@@ -430,6 +434,19 @@ export function Compras() {
         </Button>
       </motion.div>
 
+      <FilterPanel />
+
+      <Tabs value={tabCompras} onValueChange={(v) => setTabCompras(v as 'prioridad' | 'v2')} className="space-y-4">
+        <TabsList className="grid w-full max-w-xl grid-cols-2">
+          <TabsTrigger value="prioridad">Prioridad ABC (30 días)</TabsTrigger>
+          <TabsTrigger value="v2">Pedido por proveedor (40 meses)</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="prioridad" className="mt-0">
+          <CentroDecisiones embedded />
+        </TabsContent>
+
+        <TabsContent value="v2" className="mt-0 space-y-6">
       {/* Selector de proveedor */}
       <div className="space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
@@ -628,6 +645,8 @@ export function Compras() {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

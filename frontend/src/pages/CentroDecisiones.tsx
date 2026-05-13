@@ -38,7 +38,11 @@ type OrdenCompra = {
   }>;
 };
 
-export function CentroDecisiones() {
+export type CentroDecisionesProps = {
+  embedded?: boolean;
+};
+
+export function CentroDecisiones({ embedded = false }: CentroDecisionesProps) {
   const { data: sugerencias, isLoading, error } = useSugerenciasCompra();
   const { data: resumenProveedores } = useResumenComprasProveedores();
   const generarOrden = useGenerarOrdenCompra();
@@ -125,15 +129,18 @@ export function CentroDecisiones() {
   }
 
   return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold tracking-tight">Centro de Decisiones</h1>
-        <p className="text-muted-foreground">
-          Decide que comprar hoy, cuando comprar y a quien comprar en un solo lugar.
-        </p>
-      </motion.div>
-
-      <FilterPanel />
+    <div className={embedded ? 'space-y-4' : 'space-y-6'}>
+      {!embedded && (
+        <>
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+            <h1 className="text-3xl font-bold tracking-tight">Centro de Decisiones</h1>
+            <p className="text-muted-foreground">
+              Decide que comprar hoy, cuando comprar y a quien comprar en un solo lugar.
+            </p>
+          </motion.div>
+          <FilterPanel />
+        </>
+      )}
 
       {isLoading ? (
         <div className="grid gap-6">

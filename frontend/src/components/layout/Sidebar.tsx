@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   TrendingUp,
+  LineChart,
+  BarChart3,
   Users,
   Table,
   ChevronLeft,
@@ -12,11 +14,14 @@ import {
   User,
   Truck,
   PackageSearch,
-  Target,
   Menu,
   X,
   Receipt,
+  CalendarCheck,
+  Warehouse,
+  Lightbulb,
   MessageSquareText,
+  PieChart,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -36,14 +41,22 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+const primaryNav = [
+  { name: 'Hoy', href: '/', icon: CalendarCheck },
   { name: 'Compras', href: '/compras', icon: PackageSearch },
-  { name: 'Centro de decisiones', href: '/decisiones', icon: Target },
+  { name: 'Inventario', href: '/inventario', icon: Warehouse },
   { name: 'Proveedores', href: '/proveedores', icon: Truck },
-  { name: 'Facturas proveedor', href: '/facturas', icon: Receipt },
+];
+
+const reportesNav = [
+  { name: 'Ventas', href: '/ventas', icon: LayoutDashboard },
   { name: 'Márgenes', href: '/margenes', icon: TrendingUp },
+  { name: 'Predicciones', href: '/predicciones', icon: LineChart },
+  { name: 'Análisis ABC', href: '/abc', icon: BarChart3 },
   { name: 'Vendedores', href: '/vendedores', icon: Users },
+  { name: 'Facturas proveedor', href: '/facturas', icon: Receipt },
+  { name: 'Insights', href: '/insights', icon: Lightbulb },
+  { name: 'Vista CEO', href: '/ceo', icon: PieChart },
   { name: 'Datos', href: '/datos', icon: Table },
   { name: 'Analista', href: '/analista', icon: MessageSquareText },
 ];
@@ -57,6 +70,58 @@ const roleColors: Record<string, string> = {
 interface SidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+}
+
+function NavItems({
+  items,
+  collapsed,
+  onNavClick,
+}: {
+  items: typeof primaryNav;
+  collapsed: boolean;
+  onNavClick: () => void;
+}) {
+  return (
+    <>
+      {items.map((item) => (
+        <Tooltip key={item.href} delayDuration={collapsed ? 0 : 1000}>
+          <TooltipTrigger asChild>
+            <NavLink
+              to={item.href}
+              end={item.href === '/'}
+              onClick={onNavClick}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                  collapsed && 'justify-center px-2'
+                )
+              }
+            >
+              <item.icon className="h-5 w-5 flex-shrink-0" />
+              <AnimatePresence mode="wait">
+                {!collapsed && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    className="overflow-hidden whitespace-nowrap"
+                  >
+                    {item.name}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </NavLink>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right">{item.name}</TooltipContent>
+          )}
+        </Tooltip>
+      ))}
+    </>
+  );
 }
 
 export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
@@ -77,7 +142,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
   const SidebarContent = () => (
     <>
-      {/* Header */}
       <div className="flex h-16 items-center justify-between border-b px-4">
         <AnimatePresence mode="wait">
           {!collapsed && (
@@ -87,7 +151,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               exit={{ opacity: 0 }}
               className="text-xl font-bold text-primary"
             >
-              Ventas
+              Operaciones
             </motion.h1>
           )}
         </AnimatePresence>
@@ -115,49 +179,24 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         )}
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
-        {navigation.map((item) => (
-          <Tooltip key={item.name} delayDuration={collapsed ? 0 : 1000}>
-            <TooltipTrigger asChild>
-              <NavLink
-                to={item.href}
-                onClick={handleNavClick}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                    collapsed && 'justify-center px-2'
-                  )
-                }
-              >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                <AnimatePresence mode="wait">
-                  {!collapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
-                      exit={{ opacity: 0, width: 0 }}
-                      className="overflow-hidden whitespace-nowrap"
-                    >
-                      {item.name}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </NavLink>
-            </TooltipTrigger>
-            {collapsed && (
-              <TooltipContent side="right">
-                {item.name}
-              </TooltipContent>
-            )}
-          </Tooltip>
-        ))}
+        {!collapsed && (
+          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Principal
+          </p>
+        )}
+        <NavItems items={primaryNav} collapsed={collapsed} onNavClick={handleNavClick} />
+
+        <div className={cn('my-3 border-t', collapsed && 'mx-1')} />
+
+        {!collapsed && (
+          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Reportes
+          </p>
+        )}
+        <NavItems items={reportesNav} collapsed={collapsed} onNavClick={handleNavClick} />
       </nav>
 
-      {/* User section */}
       <div className="border-t p-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -168,7 +207,12 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                 collapsed && 'justify-center px-2'
               )}
             >
-              <div className={cn('h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0', roleColors[user?.role || 'viewer'])}>
+              <div
+                className={cn(
+                  'h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0',
+                  roleColors[user?.role || 'viewer']
+                )}
+              >
                 <User className="h-4 w-4 text-white" />
               </div>
               <AnimatePresence mode="wait">
@@ -210,7 +254,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
   return (
     <>
-      {/* Desktop Sidebar */}
       <motion.div
         initial={false}
         animate={{ width: collapsed ? 64 : 256 }}
@@ -220,7 +263,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         <SidebarContent />
       </motion.div>
 
-      {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <>
