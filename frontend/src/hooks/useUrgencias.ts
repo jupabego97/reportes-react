@@ -7,6 +7,12 @@ export const PRIORIDAD_URGENCIA = new Set(['🔴 Urgente', '🟠 Alta']);
 
 export const PRIORIDADES_V1 = ['🔴 Urgente', '🟠 Alta', '🟡 Media', '🟢 Baja'] as const;
 
+export const CLASIFICACIONES_ABC = ['A', 'B', 'C'] as const;
+export type ClasificacionAbc = (typeof CLASIFICACIONES_ABC)[number];
+
+export const CURVA_A = new Set<ClasificacionAbc>(['A']);
+export const CURVA_AB = new Set<ClasificacionAbc>(['A', 'B']);
+
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>;
 
 export const URGENCIA_CONFIG: Record<
@@ -37,7 +43,23 @@ export type SugerenciaCompraRow = {
   precio_compra?: number;
   clasificacion_abc?: string;
   punto_reorden?: number;
+  tendencia?: string;
+  roi_estimado?: number;
 };
+
+export function normalizarAbc(valor?: string): ClasificacionAbc {
+  const c = (valor || 'C').toUpperCase();
+  if (c === 'A' || c === 'B') return c;
+  return 'C';
+}
+
+export function filtrarPorAbc<T extends { clasificacion_abc?: string }>(
+  filas: T[],
+  filtro: 'todos' | ClasificacionAbc
+): T[] {
+  if (filtro === 'todos') return filas;
+  return filas.filter((s) => normalizarAbc(s.clasificacion_abc) === filtro);
+}
 
 /**
  * Filas urgentes según prioridad emoji o días de stock ≤ umbralDias.

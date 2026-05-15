@@ -11,6 +11,9 @@ import {
   ClipboardList,
   CheckSquare,
   Eraser,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -33,12 +36,17 @@ import { useSugerenciasCompra } from '../hooks/useApi';
 import { useFiltersStore } from '../stores/useFiltersStore';
 import { apiService, type FilterParams } from '../services/api';
 import {
+  CLASIFICACIONES_ABC,
+  CURVA_A,
   PRIORIDAD_URGENCIA,
   PRIORIDADES_V1,
+  filtrarPorAbc,
+  normalizarAbc,
   useProveedoresCardResumen,
   useProveedoresUrgenciaAgrupados,
   useUrgenciaConfig,
   useUrgenciasCompraRows,
+  type ClasificacionAbc,
   type ProveedorCardResumen,
   type SugerenciaCompraRow,
 } from '../hooks/useUrgencias';
@@ -48,6 +56,13 @@ const STORAGE_KEY = 'compras:pedido-v1';
 
 type VentanaDecision = 'hoy' | '48h' | '7d';
 type FiltroPrioridad = 'todos' | (typeof PRIORIDADES_V1)[number];
+type FiltroAbc = 'todos' | ClasificacionAbc;
+
+const abcBadgeVariant: Record<ClasificacionAbc, 'default' | 'secondary' | 'outline'> = {
+  A: 'default',
+  B: 'secondary',
+  C: 'outline',
+};
 
 type StoredCompras = {
   pedido: Record<string, number>;
@@ -92,6 +107,75 @@ function DiasStockCell({ dias }: { dias: number }) {
 function PrioridadBadge({ prioridad }: { prioridad?: string }) {
   const cfg = useUrgenciaConfig(prioridad);
   return <Badge variant={cfg.badgeVariant}>{prioridad || cfg.label}</Badge>;
+}
+
+function TendenciaCell({ tendencia }: { tendencia?: string }) {
+  if (tendencia === 'creciente') {
+    return (
+      <span className="inline-flex items-center gap-1 text-green-600 text-xs">
+        <TrendingUp className="h-3.5 w-3.5" /> Crec.
+      </span>
+    );
+  }
+  if (tendencia === 'decreciente') {
+    return (
+      <span className="inline-flex items-center gap-1 text-red-500 text-xs">
+        <TrendingDown className="h-3.5 w-3.5" /> Decr.
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-muted-foreground text-xs">
+      <Minus className="h-3.5 w-3.5" /> Est.
+    </span>
+  );
+}
+
+function FiltroChips<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  renderLabel,
+}: {
+  label: string;
+  value: T;
+  options: readonly T[];
+  onChange: (v: T) => void;
+  renderLabel?: (opt: T) => string;
+}) {
+  return (
+    <motion.div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs text-muted-foreground font-medium">{label}</span>
+      <button
+        type="button"
+        onClick={() => onChange('todos' as T)}
+        className={cn(
+          'text-xs px-3 py-1 rounded-full border transition-all',
+          value === 'todos'
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'border-border hover:border-primary'
+        )}
+      >
+        Todos
+      </button>
+      {options.map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(opt)}
+          className={cn(
+            'text-xs px-3 py-1 rounded-full border transition-all',
+            value === opt
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'border-border hover:border-primary'
+          )}
+        >
+          {renderLabel ? renderLabel(opt) : opt}
+        </button>
+      ))}
+    </motion.div>
+  );
 }
 
 function ProveedorCard({
@@ -162,6 +246,7 @@ export function Compras() {
   const [ventana, setVentana] = useState<VentanaDecision>('hoy');
   const [busqueda, setBusqueda] = useState('');
   const [filtroPrioridad, setFiltroPrioridad] = useState<FiltroPrioridad>('todos');
+  const [filtroAbc, setFiltroAbc] = useState<FiltroAbc>('todos');
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState<string | null>(null);
   const [pedido, setPedido] = useState<Record<string, number>>({});
   const [exportingExcel, setExportingExcel] = useState(false);
@@ -220,7 +305,16 @@ export function Compras() {
     0
   );
 
-  const listaProveedor = useMemo(() => {
+  const inversionSoloA = useMemo(
+    () =>
+      filtrarPorAbc(comprarVentana, 'A').reduce(
+        (acc, s) => acc + Number(s.costo_estimado || 0),
+        0
+      ),
+    [comprarVentana]
+  );
+
+  const listaProveedorRaw = useMemo(() => {
     if (!proveedorSeleccionado) return [];
     const q = busqueda.toLowerCase().trim();
     return rows
@@ -234,6 +328,16 @@ export function Compras() {
       )
       .sort((a, b) => (a.dias_stock ?? 999) - (b.dias_stock ?? 999));
   }, [rows, proveedorSeleccionado, filtroPrioridad, busqueda]);
+
+  const listaProveedor = useMemo(
+    () => filtrarPorAbc(listaProveedorRaw, filtroAbc),
+    [listaProveedorRaw, filtroAbc]
+  );
+
+  const filasAccion = useMemo(() => {
+    if (proveedorSeleccionado) return listaProveedor;
+    return filtrarPorAbc(comprarVentana, filtroAbc);
+  }, [proveedorSeleccionado, listaProveedor, comprarVentana, filtroAbc]);
 
   const itemsSeleccionados = useMemo(
     () => Object.entries(pedido).filter(([, qty]) => qty > 0),
@@ -261,18 +365,43 @@ export function Compras() {
     setPedido((prev) => ({ ...prev, [nombre]: checked ? sugerido : 0 }));
   };
 
-  const handleMarcarUrgentes = () => {
-    const visibles = proveedorSeleccionado ? listaProveedor : comprarVentana;
+  const marcarFilas = (predicado: (item: SugerenciaCompraRow) => boolean, mensajeOk: string, mensajeVacio: string) => {
     const next = { ...pedido };
     let count = 0;
-    for (const item of visibles) {
-      if (PRIORIDAD_URGENCIA.has(item.prioridad || '')) {
+    for (const item of filasAccion) {
+      if (predicado(item)) {
         next[item.nombre!] = Number(item.cantidad_sugerida || 0);
         count += 1;
       }
     }
     setPedido(next);
-    toast.success(count > 0 ? `${count} ítems urgentes marcados` : 'No hay ítems urgentes visibles');
+    toast.success(count > 0 ? `${count} ${mensajeOk}` : mensajeVacio);
+  };
+
+  const handleMarcarUrgentes = () => {
+    marcarFilas(
+      (item) => PRIORIDAD_URGENCIA.has(item.prioridad || ''),
+      'ítems urgentes marcados',
+      'No hay ítems urgentes visibles con los filtros actuales'
+    );
+  };
+
+  const handleMarcarCurvaA = () => {
+    marcarFilas(
+      (item) => CURVA_A.has(normalizarAbc(item.clasificacion_abc)),
+      'ítems curva A marcados',
+      'No hay ítems curva A visibles con los filtros actuales'
+    );
+  };
+
+  const handleMarcarAUrgentes = () => {
+    marcarFilas(
+      (item) =>
+        CURVA_A.has(normalizarAbc(item.clasificacion_abc)) &&
+        PRIORIDAD_URGENCIA.has(item.prioridad || ''),
+      'ítems curva A urgentes marcados',
+      'No hay ítems curva A urgentes/altos visibles'
+    );
   };
 
   const handleLimpiarSeleccion = () => {
@@ -418,6 +547,9 @@ export function Compras() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-primary">{formatCurrency(inversionVentana)}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Solo curva A: <span className="font-semibold">{formatCurrency(inversionSoloA)}</span>
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -467,6 +599,24 @@ export function Compras() {
             </div>
           </motion.div>
 
+          <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+            <FiltroChips
+              label="Prioridad"
+              value={filtroPrioridad}
+              options={PRIORIDADES_V1}
+              onChange={setFiltroPrioridad}
+            />
+            <FiltroChips
+              label="Curva ABC"
+              value={filtroAbc}
+              options={CLASIFICACIONES_ABC}
+              onChange={setFiltroAbc}
+            />
+            <p className="text-xs text-muted-foreground">
+              La curva ABC usa el mismo periodo que los filtros globales de arriba.
+            </p>
+          </div>
+
           {proveedoresCards.length > 0 && (
             <motion.div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {proveedoresCards.map((prov) => (
@@ -494,36 +644,6 @@ export function Compras() {
                 </Button>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFiltroPrioridad('todos')}
-                  className={cn(
-                    'text-xs px-3 py-1 rounded-full border transition-all',
-                    filtroPrioridad === 'todos'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border hover:border-primary'
-                  )}
-                >
-                  Todos
-                </button>
-                {PRIORIDADES_V1.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setFiltroPrioridad(p)}
-                    className={cn(
-                      'text-xs px-3 py-1 rounded-full border transition-all',
-                      filtroPrioridad === p
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'border-border hover:border-primary'
-                    )}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-
               {listaProveedor.length === 0 ? (
                 <Card>
                   <CardContent className="py-12 flex flex-col items-center gap-3 text-muted-foreground">
@@ -548,6 +668,11 @@ export function Compras() {
                             <TableHead>Urgencia</TableHead>
                             <TableHead>Producto</TableHead>
                             <TableHead>ABC</TableHead>
+                            <TableHead>Tendencia</TableHead>
+                            <TableHead className="text-right">
+                              ROI est.
+                              <MetricTooltip text="Margen unitario estimado × cantidad sugerida." />
+                            </TableHead>
                             <TableHead className="text-right">Stock</TableHead>
                             <TableHead className="text-right">
                               Días
@@ -590,7 +715,17 @@ export function Compras() {
                                   />
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant="outline">{item.clasificacion_abc || '—'}</Badge>
+                                  <Badge variant={abcBadgeVariant[normalizarAbc(item.clasificacion_abc)]}>
+                                    {normalizarAbc(item.clasificacion_abc)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <TendenciaCell tendencia={item.tendencia} />
+                                </TableCell>
+                                <TableCell className="text-right text-sm">
+                                  {item.roi_estimado != null
+                                    ? formatCurrency(Number(item.roi_estimado))
+                                    : '—'}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   {formatNumber(Number(item.cantidad_disponible ?? 0))}
@@ -668,6 +803,12 @@ export function Compras() {
             <Button variant="outline" size="sm" onClick={handleMarcarUrgentes}>
               <CheckSquare className="h-4 w-4 mr-1" />
               Marcar urgentes
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleMarcarCurvaA}>
+              Marcar curva A
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleMarcarAUrgentes}>
+              Marcar A urgentes
             </Button>
             <Button variant="outline" size="sm" onClick={handleLimpiarSeleccion}>
               <Eraser className="h-4 w-4 mr-1" />
