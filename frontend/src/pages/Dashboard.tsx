@@ -1,13 +1,15 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { MetricCards } from '../components/dashboard/MetricCards';
-import { SaludInventario } from '../components/dashboard/SaludInventario';
 import { AlertSystem } from '../components/dashboard/AlertSystem';
 import { VentasDiarias } from '../components/charts/VentasDiarias';
 import { VentasVendedor } from '../components/charts/VentasVendedor';
 import { VentasFamilia } from '../components/charts/VentasFamilia';
 import { VentasMetodo } from '../components/charts/VentasMetodo';
 import { VentasHeatmap } from '../components/charts/VentasHeatmap';
+import { Card, CardContent } from '../components/ui/card';
+import { buttonVariants } from '../components/ui/button';
 
 export function Dashboard() {
   return (
@@ -32,15 +34,19 @@ export function Dashboard() {
       {/* Métricas */}
       <MetricCards />
 
-      {/* Salud inventario + Alertas */}
-      <div className="grid gap-6 lg:grid-cols-4">
-        <div className="lg:col-span-1">
-          <SaludInventario />
-        </div>
-        <div className="lg:col-span-3">
-          <AlertSystem />
-        </div>
-      </div>
+      <Card className="border-dashed">
+        <CardContent className="py-4 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">
+            Salud de inventario y cobertura: ver la vista operativa
+          </p>
+          <Link to="/inventario" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            Ir a inventario
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* Alertas */}
+      <AlertSystem />
 
       {/* Gráficos principales */}
       <div className="grid gap-6 lg:grid-cols-2">

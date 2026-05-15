@@ -15,13 +15,15 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { useMargenes } from '../hooks/useApi';
+import { useMargenes, useMargenesGmroi, useStockoutRate } from '../hooks/useApi';
 import { cn, exportToCSV } from '../lib/utils';
 import { MetricTooltip } from '../components/ui/metric-tooltip';
 import { ProductLink } from '../components/ProductLink';
 
 export function Margenes() {
   const { data, isLoading, error } = useMargenes();
+  const { data: gmroi } = useMargenesGmroi();
+  const { data: stockout } = useStockoutRate();
 
   if (error) {
     return (
@@ -70,6 +72,39 @@ export function Margenes() {
         </motion.div>
       ) : data ? (
         <>
+          {(stockout || (gmroi && gmroi.length > 0)) && (
+            <div className="grid gap-4 md:grid-cols-2">
+              {stockout && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Stockout (SKU con venta 30d)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">{stockout.stockout_pct}%</p>
+                    <p className="text-xs text-muted-foreground">
+                      {stockout.sin_stock} sin stock de {stockout.activos} activos
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+              {gmroi && gmroi.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Top GMROI por familia</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-xs space-y-1">
+                    {gmroi.slice(0, 5).map((r: { familia: string; gmroi: number }) => (
+                      <div key={r.familia} className="flex justify-between gap-2">
+                        <span>{r.familia}</span>
+                        <span className="font-mono">{r.gmroi}</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
           {/* Resumen de márgenes */}
           <div className="grid gap-4 md:grid-cols-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

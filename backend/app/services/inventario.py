@@ -185,6 +185,23 @@ class InventarioService:
             "valor_criticos": round(sum(p["valor_inventario"] for p in criticos), 2),
             "valor_exceso": round(sum(p["valor_inventario"] for p in exceso), 2),
         }
+
+    async def get_stockout_rate(self) -> Dict[str, Any]:
+        """% de SKU con venta en 30d que están sin stock (aprox. stockout rate)."""
+        productos = await self.get_inventario_completo()
+        activos = [
+            p
+            for p in productos
+            if float(p.get("cantidad_vendida_30d") or 0) > 0
+        ]
+        if not activos:
+            return {"stockout_pct": 0.0, "activos": 0, "sin_stock": 0}
+        sin_stock = len([p for p in activos if float(p.get("stock_actual") or 0) <= 0])
+        return {
+            "stockout_pct": round(sin_stock / len(activos) * 100, 1),
+            "activos": len(activos),
+            "sin_stock": sin_stock,
+        }
     
     async def get_alertas_inventario(self) -> List[Dict[str, Any]]:
         """Obtiene alertas de inventario priorizadas."""

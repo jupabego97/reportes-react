@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
 import {
     Package,
     AlertTriangle,
@@ -22,7 +21,11 @@ import {
     TableRow,
 } from '../components/ui/table';
 import { Select } from '../components/ui/select';
-import { api } from '../services/api';
+import {
+  useInventarioLista,
+  useInventarioResumen,
+  useInventarioAlertas,
+} from '../hooks/useApi';
 import { cn } from '../lib/utils';
 
 // Types
@@ -44,19 +47,6 @@ interface ProductoInventario {
     cantidad_vendida_30d: number;
 }
 
-interface ResumenInventario {
-    total_productos: number;
-    total_unidades: number;
-    valor_total: number;
-    productos_criticos: number;
-    productos_bajos: number;
-    productos_normales: number;
-    productos_exceso: number;
-    rotacion_promedio: number;
-    valor_criticos: number;
-    valor_exceso: number;
-}
-
 interface AlertaInventario {
     tipo: string;
     icono: string;
@@ -64,31 +54,6 @@ interface AlertaInventario {
     detalle: string;
     datos: ProductoInventario[];
 }
-
-// API hooks
-const useInventario = (estado?: string) => {
-    return useQuery({
-        queryKey: ['inventario', estado],
-        queryFn: () => api.get<{ data: ProductoInventario[]; total: number }>(
-            '/api/inventario',
-            { estado, limite: 200 }
-        ),
-    });
-};
-
-const useResumenInventario = () => {
-    return useQuery({
-        queryKey: ['inventario-resumen'],
-        queryFn: () => api.get<ResumenInventario>('/api/inventario/resumen'),
-    });
-};
-
-const useAlertasInventario = () => {
-    return useQuery({
-        queryKey: ['inventario-alertas'],
-        queryFn: () => api.get<AlertaInventario[]>('/api/inventario/alertas'),
-    });
-};
 
 // Format currency
 const formatCurrency = (value: number) => {
@@ -104,11 +69,11 @@ export function Inventario() {
     const [filtroEstado, setFiltroEstado] = useState<string>('todos');
     const [busqueda, setBusqueda] = useState('');
 
-    const { data: inventarioData, isLoading: loadingInventario } = useInventario(
+    const { data: inventarioData, isLoading: loadingInventario } = useInventarioLista(
         filtroEstado !== 'todos' ? filtroEstado : undefined
     );
-    const { data: resumen, isLoading: loadingResumen } = useResumenInventario();
-    const { data: alertas, isLoading: loadingAlertas } = useAlertasInventario();
+    const { data: resumen, isLoading: loadingResumen } = useInventarioResumen();
+    const { data: alertas, isLoading: loadingAlertas } = useInventarioAlertas();
 
     // Filter by search
     const productosFiltrados = inventarioData?.data?.filter(p =>
@@ -218,7 +183,7 @@ export function Inventario() {
                     transition={{ delay: 0.1 }}
                     className="space-y-4"
                 >
-                    {alertas.slice(0, 2).map((alerta, idx) => (
+                    {alertas.slice(0, 2).map((alerta: AlertaInventario, idx: number) => (
                         <Card
                             key={idx}
                             className={cn(
@@ -235,7 +200,7 @@ export function Inventario() {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-2">
-                                    {alerta.datos.slice(0, 6).map((producto, i) => (
+                                    {alerta.datos.slice(0, 6).map((producto: ProductoInventario, i: number) => (
                                         <Badge key={i} variant="outline" className="text-sm">
                                             {producto.nombre}
                                             <span className="ml-1 text-muted-foreground">

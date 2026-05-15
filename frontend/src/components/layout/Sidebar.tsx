@@ -23,8 +23,10 @@ import {
   MessageSquareText,
   PieChart,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { apiService } from '../../services/api';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
@@ -41,14 +43,18 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 
-const primaryNav = [
+type NavItem = { name: string; href: string; icon: LucideIcon };
+
+const destacadoNav: NavItem[] = [{ name: 'Vista CEO', href: '/ceo', icon: PieChart }];
+
+const operacionNav: NavItem[] = [
   { name: 'Hoy', href: '/', icon: CalendarCheck },
   { name: 'Compras', href: '/compras', icon: PackageSearch },
   { name: 'Inventario', href: '/inventario', icon: Warehouse },
   { name: 'Proveedores', href: '/proveedores', icon: Truck },
 ];
 
-const reportesNav = [
+const analisisNav: NavItem[] = [
   { name: 'Ventas', href: '/ventas', icon: LayoutDashboard },
   { name: 'Márgenes', href: '/margenes', icon: TrendingUp },
   { name: 'Predicciones', href: '/predicciones', icon: LineChart },
@@ -56,7 +62,6 @@ const reportesNav = [
   { name: 'Vendedores', href: '/vendedores', icon: Users },
   { name: 'Facturas proveedor', href: '/facturas', icon: Receipt },
   { name: 'Insights', href: '/insights', icon: Lightbulb },
-  { name: 'Vista CEO', href: '/ceo', icon: PieChart },
   { name: 'Datos', href: '/datos', icon: Table },
   { name: 'Analista', href: '/analista', icon: MessageSquareText },
 ];
@@ -76,10 +81,12 @@ function NavItems({
   items,
   collapsed,
   onNavClick,
+  destacado = false,
 }: {
-  items: typeof primaryNav;
+  items: NavItem[];
   collapsed: boolean;
   onNavClick: () => void;
+  destacado?: boolean;
 }) {
   return (
     <>
@@ -95,7 +102,9 @@ function NavItems({
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                    : destacado
+                      ? 'border border-primary/40 bg-primary/10 text-foreground hover:bg-primary/15'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                   collapsed && 'justify-center px-2'
                 )
               }
@@ -129,7 +138,12 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+    } catch {
+      /* ignorar si el backend no responde */
+    }
     logout();
     navigate('/login');
   };
@@ -182,19 +196,28 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
         {!collapsed && (
           <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Principal
+            Destacado
           </p>
         )}
-        <NavItems items={primaryNav} collapsed={collapsed} onNavClick={handleNavClick} />
+        <NavItems items={destacadoNav} collapsed={collapsed} onNavClick={handleNavClick} destacado />
 
         <div className={cn('my-3 border-t', collapsed && 'mx-1')} />
 
         {!collapsed && (
           <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Reportes
+            Operación
           </p>
         )}
-        <NavItems items={reportesNav} collapsed={collapsed} onNavClick={handleNavClick} />
+        <NavItems items={operacionNav} collapsed={collapsed} onNavClick={handleNavClick} />
+
+        <div className={cn('my-3 border-t', collapsed && 'mx-1')} />
+
+        {!collapsed && (
+          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Análisis
+          </p>
+        )}
+        <NavItems items={analisisNav} collapsed={collapsed} onNavClick={handleNavClick} />
       </nav>
 
       <div className="border-t p-2">

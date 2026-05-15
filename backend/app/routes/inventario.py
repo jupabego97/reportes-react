@@ -76,6 +76,13 @@ async def get_alertas_inventario(db: AsyncSession = Depends(get_db)):
     return await service.get_alertas_inventario()
 
 
+@router.get("/stockout-rate")
+async def get_stockout_rate(db: AsyncSession = Depends(get_db)):
+    """% de SKU con venta reciente que están sin stock."""
+    service = InventarioService(db)
+    return await service.get_stockout_rate()
+
+
 @router.get("/por-familia")
 async def get_inventario_por_familia(db: AsyncSession = Depends(get_db)):
     """Obtiene valor del inventario por familia de productos."""

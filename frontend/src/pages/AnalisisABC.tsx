@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ResponsiveBar } from '@nivo/bar';
 import { ResponsivePie } from '@nivo/pie';
@@ -15,6 +16,7 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { useABC } from '../hooks/useApi';
+import { Select } from '../components/ui/select';
 import { ProductLink } from '../components/ProductLink';
 
 const categoryColors = {
@@ -24,7 +26,8 @@ const categoryColors = {
 };
 
 export function AnalisisABC() {
-  const { data, isLoading, error } = useABC();
+  const [criterio, setCriterio] = useState<'ventas' | 'cantidad' | 'margen' | 'frecuencia'>('ventas');
+  const { data, isLoading, error } = useABC(criterio);
 
   if (error) {
     return (
@@ -49,6 +52,21 @@ export function AnalisisABC() {
 
       {/* Filtros */}
       <FilterPanel />
+
+      <div className="flex flex-wrap items-center gap-3 max-w-md">
+        <label className="text-sm text-muted-foreground whitespace-nowrap">Criterio ABC</label>
+        <Select
+          className="max-w-xs"
+          value={criterio}
+          onChange={(e) => setCriterio(e.target.value as typeof criterio)}
+          options={[
+            { value: 'ventas', label: 'Ventas ($)' },
+            { value: 'cantidad', label: 'Cantidad (unidades)' },
+            { value: 'margen', label: 'Margen ($)' },
+            { value: 'frecuencia', label: 'Frecuencia (lineas)' },
+          ]}
+        />
+      </div>
 
       {isLoading ? (
         <div className="grid gap-6 lg:grid-cols-2">

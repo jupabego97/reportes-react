@@ -17,11 +17,11 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { useGenerarOrdenCompra, useResumenComprasProveedores, useSugerenciasCompra } from '../hooks/useApi';
+import { useProveedoresUrgenciaAgrupados, useUrgenciasCompraRows } from '../hooks/useUrgencias';
 import { formatCurrency, formatNumber, exportToCSV } from '../lib/utils';
 import { MetricTooltip } from '../components/ui/metric-tooltip';
 import { ProductLink } from '../components/ProductLink';
 
-const prioridadesAccionHoy = new Set(['🔴 Urgente', '🟠 Alta']);
 type VentanaDecision = 'hoy' | '48h' | '7d';
 
 type OrdenCompra = {
@@ -62,32 +62,10 @@ export function CentroDecisiones({ embedded = false }: CentroDecisionesProps) {
     return 'Comprar en 7 dias';
   }, [ventana]);
 
-  const comprarHoy = useMemo(() => {
-    const rows = Array.isArray(sugerencias) ? sugerencias : [];
-    const q = busqueda.toLowerCase().trim();
-    return rows
-      .filter((s: any) => prioridadesAccionHoy.has(s.prioridad) || (s.dias_stock ?? 999) <= umbralDias)
-      .filter((s: any) => !q || (s.nombre || '').toLowerCase().includes(q) || (s.proveedor || '').toLowerCase().includes(q))
-      .sort((a: any, b: any) => (a.dias_stock ?? 999) - (b.dias_stock ?? 999));
-  }, [sugerencias, umbralDias, busqueda]);
+  const rows = Array.isArray(sugerencias) ? sugerencias : [];
+  const comprarHoy = useUrgenciasCompraRows(rows, { umbralDias, busqueda });
 
-  const proveedoresUrgentes = useMemo(() => {
-    const map = new Map<string, { proveedor: string; productos: number; unidades: number; costo: number }>();
-    for (const s of comprarHoy) {
-      const proveedor = s.proveedor || 'Sin proveedor';
-      const prev = map.get(proveedor) || {
-        proveedor,
-        productos: 0,
-        unidades: 0,
-        costo: 0,
-      };
-      prev.productos += 1;
-      prev.unidades += Number(s.cantidad_sugerida || 0);
-      prev.costo += Number(s.costo_estimado || 0);
-      map.set(proveedor, prev);
-    }
-    return Array.from(map.values()).sort((a, b) => b.costo - a.costo);
-  }, [comprarHoy]);
+  const proveedoresUrgentes = useProveedoresUrgenciaAgrupados(comprarHoy);
 
   const inversionHoy = comprarHoy.reduce((acc, s: any) => acc + Number(s.costo_estimado || 0), 0);
 

@@ -20,12 +20,12 @@ import {
   useSaludInventario,
   useInventarioResumen,
   useInventarioAgotados,
+  useKpisCEO,
 } from '../hooks/useApi';
+import { useProveedoresUrgenciaAgrupados, useUrgenciasCompraRows } from '../hooks/useUrgencias';
 import { cn, formatCurrency, formatNumber } from '../lib/utils';
 import { ProductLink } from '../components/ProductLink';
 import { FilterPanel } from '../components/filters/FilterPanel';
-
-const prioridadesAccionHoy = new Set(['🔴 Urgente', '🟠 Alta']);
 
 export function Hoy() {
   const { data: sugerencias, isLoading: loadingSug } = useSugerenciasCompra();
@@ -33,44 +33,25 @@ export function Hoy() {
   const { data: salud, isLoading: loadingSalud } = useSaludInventario();
   const { data: invResumen, isLoading: loadingInv } = useInventarioResumen();
   const { data: agotados, isLoading: loadingAgot } = useInventarioAgotados();
+  const { data: kpisCeo, isLoading: loadingKpis } = useKpisCEO();
 
   const rows = Array.isArray(sugerencias) ? sugerencias : [];
-
-  const comprarHoy = useMemo(() => {
-    return rows
-      .filter(
-        (s: { prioridad?: string; dias_stock?: number }) =>
-          prioridadesAccionHoy.has(s.prioridad || '') || (s.dias_stock ?? 999) <= 2
-      )
-      .sort(
-        (a: { dias_stock?: number }, b: { dias_stock?: number }) =>
-          (a.dias_stock ?? 999) - (b.dias_stock ?? 999)
-      );
-  }, [rows]);
+  const comprarHoy = useUrgenciasCompraRows(rows, { umbralDias: 2 });
 
   const inversionHoy = useMemo(
     () => comprarHoy.reduce((acc: number, s: { costo_estimado?: number }) => acc + Number(s.costo_estimado || 0), 0),
     [comprarHoy]
   );
 
-  const topProveedores = useMemo(() => {
-    const map = new Map<string, { proveedor: string; productos: number; costo: number }>();
-    for (const s of comprarHoy) {
-      const proveedor = (s as { proveedor?: string }).proveedor || 'Sin proveedor';
-      const prev = map.get(proveedor) || { proveedor, productos: 0, costo: 0 };
-      prev.productos += 1;
-      prev.costo += Number((s as { costo_estimado?: number }).costo_estimado || 0);
-      map.set(proveedor, prev);
-    }
-    return Array.from(map.values()).sort((a, b) => b.costo - a.costo).slice(0, 5);
-  }, [comprarHoy]);
+  const proveedoresAgrup = useProveedoresUrgenciaAgrupados(comprarHoy);
+  const topProveedores = useMemo(() => proveedoresAgrup.slice(0, 5), [proveedoresAgrup]);
 
   const agotadosTotal =
     (agotados?.resumen?.total_agotados as number | undefined) ??
     ((agotados?.ultima_semana?.total as number | undefined) || 0) +
       ((agotados?.ultimas_2_semanas?.total as number | undefined) || 0);
 
-  const loading = loadingSug || loadingSalud || loadingInv || loadingAgot;
+  const loading = loadingSug || loadingSalud || loadingInv || loadingAgot || loadingKpis;
 
   return (
     <div className="space-y-6">
@@ -86,6 +67,49 @@ export function Hoy() {
       </motion.div>
 
       <FilterPanel />
+
+      {!loading && kpisCeo && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="pt-4 pb-3">
+              <p className="text-xs text-muted-foreground">Ventas hoy</p>
+              <p className="text-lg font-bold">{formatCurrency(Number(kpisCeo.ventas_hoy) || 0)}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Período (filtros): {formatCurrency(Number(kpisCeo.ventas_mes) || 0)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <p className="text-xs text-muted-foreground">Margen bruto %</p>
+              <p className="text-lg font-bold">{Number(kpisCeo.margen_bruto_pct ?? 0).toFixed(1)}%</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                WAPE (4 sem.): {kpisCeo.wape_forecast != null ? `${kpisCeo.wape_forecast}%` : '—'}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <p className="text-xs text-muted-foreground">Stockout (SKU activos)</p>
+              <p className="text-lg font-bold">{Number(kpisCeo.stockout_pct ?? 0).toFixed(1)}%</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Inventario: {formatCurrency(Number(kpisCeo.valor_inventario_total) || 0)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <p className="text-xs text-muted-foreground">Salud inventario</p>
+              <p className="text-lg font-bold">{Number(kpisCeo.salud_inventario_pct ?? 0).toFixed(0)}%</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <Link className={buttonVariants({ variant: 'link', className: 'h-auto p-0 text-xs' })} to="/ceo">
+                  Ver vista CEO
+                </Link>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

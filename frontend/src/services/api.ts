@@ -6,7 +6,6 @@ import type {
   VentasResponse,
   FiltrosOpciones,
   Metricas,
-  DashboardData,
   PrediccionResponse,
 } from '../types';
 
@@ -113,7 +112,7 @@ class ApiClient {
 export const api = new ApiClient(API_BASE_URL);
 
 // Re-export types for backward compatibility
-export type { FilterParams, PaginationParams, Venta, VentasResponse, FiltrosOpciones, Metricas, DashboardData };
+export type { FilterParams, PaginationParams, Venta, VentasResponse, FiltrosOpciones, Metricas };
 
 // API Functions
 export const apiService = {
@@ -121,7 +120,7 @@ export const apiService = {
   login: (username: string, password: string) =>
     api.post<{ access_token: string; user: any }>('/api/auth/login/json', { username, password }),
 
-  getMe: () => api.get<any>('/api/auth/me'),
+  logout: () => api.post<{ message?: string }>('/api/auth/logout', {}),
 
   getMetricas: (filters: FilterParams) =>
     api.get<Metricas>('/api/dashboard/metricas', filters),
@@ -136,9 +135,6 @@ export const apiService = {
   getVentas: (filters: FilterParams & PaginationParams) =>
     api.get<VentasResponse>('/api/ventas', filters),
 
-  getAllVentas: (filters: FilterParams) =>
-    api.get<{ data: Venta[]; total_registros: number }>('/api/ventas/all', filters),
-
   getVentasPorDia: (filters: FilterParams) =>
     api.get<any[]>('/api/ventas/por-dia', filters),
 
@@ -151,9 +147,6 @@ export const apiService = {
   getVentasPorMetodo: (filters: FilterParams) =>
     api.get<any[]>('/api/ventas/por-metodo', filters),
 
-  getTopProductosCantidad: (filters: FilterParams, limit?: number) =>
-    api.get<any[]>('/api/ventas/top-productos-cantidad', { ...filters, limit }),
-
   // Filtros
   getFiltrosOpciones: () => api.get<FiltrosOpciones>('/api/filtros/opciones'),
 
@@ -161,17 +154,29 @@ export const apiService = {
   getMargenes: (filters: FilterParams) =>
     api.get<any>('/api/margenes', filters),
 
+  getMargenesGmroi: (filters: FilterParams) =>
+    api.get<any[]>('/api/margenes/gmroi', filters),
+
   // Predicciones
   getPredicciones: (filters: FilterParams) =>
     api.get<PrediccionResponse>('/api/predicciones', filters),
 
+  getPrediccionesBacktest: (filters: FilterParams, semanas: number = 4) =>
+    api.get<{ semanas: number; wape_promedio: number | null; mape_promedio: number | null; detalle: any[] }>(
+      '/api/predicciones/backtest',
+      { ...filters, semanas },
+    ),
+
   // ABC
-  getABC: (filters: FilterParams) =>
-    api.get<any>('/api/abc', filters),
+  getABC: (filters: FilterParams, criterio: string = 'ventas') =>
+    api.get<any>('/api/abc', { ...filters, criterio }),
 
   // Vendedores
   getRankingVendedores: (filters: FilterParams) =>
-    api.get<any>('/api/vendedores', filters),
+    api.get<any[]>('/api/vendedores', filters),
+
+  getVendedorDetalle: (nombre: string, filters: FilterParams) =>
+    api.get<any>(`/api/vendedores/${encodeURIComponent(nombre)}`, filters),
 
   // Compras
   getSugerenciasCompra: (filters: FilterParams) =>
@@ -204,6 +209,9 @@ export const apiService = {
   getInsights: (filters: FilterParams) =>
     api.get<any>('/api/insights', filters),
 
+  getInsightsKpis: (filters: FilterParams) =>
+    api.get<Record<string, unknown>>('/api/insights/kpis', filters),
+
   // Facturas proveedor
   getFacturasProveedor: (params?: { proveedor?: string; dias_plazo?: number; estado?: string }) =>
     api.get<any[]>('/api/facturas-proveedor', params),
@@ -219,6 +227,21 @@ export const apiService = {
   getInventarioAlertas: () => api.get<any[]>('/api/inventario/alertas'),
 
   getInventarioAgotados: () => api.get<any>('/api/inventario/agotados'),
+
+  getInventario: (params?: {
+    estado?: string;
+    familia?: string;
+    proveedor?: string;
+    ordenar_por?: string;
+    limite?: number;
+  }) => api.get<{ data: any[]; total: number }>('/api/inventario', params),
+
+  getInventarioPorFamilia: () => api.get<any[]>('/api/inventario/por-familia'),
+
+  getInventarioPorProveedor: () => api.get<any[]>('/api/inventario/por-proveedor'),
+
+  getStockoutRate: () =>
+    api.get<{ stockout_pct: number; activos: number; sin_stock: number }>('/api/inventario/stockout-rate'),
 
   // Export
   exportExcel: (filters: FilterParams) =>

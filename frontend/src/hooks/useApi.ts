@@ -35,7 +35,6 @@ function useFilterParams(): FilterParams {
 
 // Query Keys
 export const queryKeys = {
-  dashboard: (filters: FilterParams) => ['dashboard', filters] as const,
   metricas: (filters: FilterParams) => ['metricas', filters] as const,
   alertas: (filters: FilterParams) => ['alertas', filters] as const,
   saludInventario: ['salud-inventario'] as const,
@@ -44,21 +43,30 @@ export const queryKeys = {
   ventasPorVendedor: (filters: FilterParams) => ['ventas-por-vendedor', filters] as const,
   ventasPorFamilia: (filters: FilterParams) => ['ventas-por-familia', filters] as const,
   ventasPorMetodo: (filters: FilterParams) => ['ventas-por-metodo', filters] as const,
-  topProductos: (filters: FilterParams, limit?: number) => ['top-productos', filters, limit] as const,
   filtrosOpciones: ['filtros-opciones'] as const,
   margenes: (filters: FilterParams) => ['margenes', filters] as const,
+  margenesGmroi: (filters: FilterParams) => ['margenes-gmroi', filters] as const,
   predicciones: (filters: FilterParams) => ['predicciones', filters] as const,
-  abc: (filters: FilterParams) => ['abc', filters] as const,
+  prediccionesBacktest: (filters: FilterParams, semanas: number) =>
+    ['predicciones-backtest', filters, semanas] as const,
+  abc: (filters: FilterParams, criterio: string) => ['abc', filters, criterio] as const,
   rankingVendedores: (filters: FilterParams) => ['ranking-vendedores', filters] as const,
+  vendedorDetalle: (nombre: string, filters: FilterParams) =>
+    ['vendedor-detalle', nombre, filters] as const,
   sugerenciasCompra: (filters: FilterParams) => ['sugerencias-compra', filters] as const,
   resumenComprasProveedores: (filters: FilterParams) => ['resumen-compras-proveedores', filters] as const,
   insights: (filters: FilterParams) => ['insights', filters] as const,
+  insightsKpis: (filters: FilterParams) => ['insights-kpis', filters] as const,
   facturasProveedor: (params?: Record<string, unknown>) => ['facturas-proveedor', params ?? {}] as const,
   facturasProveedorResumen: (params?: Record<string, unknown>) => ['facturas-proveedor-resumen', params ?? {}] as const,
   productoDetalle: (nombre: string) => ['producto-detalle', nombre] as const,
   inventarioResumen: ['inventario-resumen'] as const,
   inventarioAlertas: ['inventario-alertas'] as const,
   inventarioAgotados: ['inventario-agotados'] as const,
+  inventarioLista: (estado?: string) => ['inventario', 'lista', estado ?? 'all'] as const,
+  inventarioPorFamilia: ['inventario', 'por-familia'] as const,
+  inventarioPorProveedor: ['inventario', 'por-proveedor'] as const,
+  stockoutRate: ['inventario', 'stockout-rate'] as const,
 };
 
 export function useMetricas() {
@@ -133,15 +141,6 @@ export function useVentasPorMetodo() {
   });
 }
 
-export function useTopProductos(limit: number = 10) {
-  const filters = useFilterParams();
-  return useQuery({
-    queryKey: queryKeys.topProductos(filters, limit),
-    queryFn: () => apiService.getTopProductosCantidad(filters, limit),
-    staleTime: 30000,
-  });
-}
-
 // Filtros Hook
 export function useFiltrosOpciones() {
   return useQuery({
@@ -170,11 +169,20 @@ export function usePredicciones() {
   });
 }
 
-export function useABC() {
+export function usePrediccionesBacktest(semanas: number = 4) {
   const filters = useFilterParams();
   return useQuery({
-    queryKey: queryKeys.abc(filters),
-    queryFn: () => apiService.getABC(filters),
+    queryKey: queryKeys.prediccionesBacktest(filters, semanas),
+    queryFn: () => apiService.getPrediccionesBacktest(filters, semanas),
+    staleTime: 120000,
+  });
+}
+
+export function useABC(criterio: string = 'ventas') {
+  const filters = useFilterParams();
+  return useQuery({
+    queryKey: queryKeys.abc(filters, criterio),
+    queryFn: () => apiService.getABC(filters, criterio),
     staleTime: 60000,
   });
 }
@@ -184,6 +192,16 @@ export function useRankingVendedores() {
   return useQuery({
     queryKey: queryKeys.rankingVendedores(filters),
     queryFn: () => apiService.getRankingVendedores(filters),
+    staleTime: 60000,
+  });
+}
+
+export function useVendedorDetalle(nombre: string | undefined) {
+  const filters = useFilterParams();
+  return useQuery({
+    queryKey: queryKeys.vendedorDetalle(nombre || '', filters),
+    queryFn: () => apiService.getVendedorDetalle(nombre!, filters),
+    enabled: !!nombre,
     staleTime: 60000,
   });
 }
@@ -212,6 +230,16 @@ export function useInsights() {
     queryKey: queryKeys.insights(filters),
     queryFn: () => apiService.getInsights(filters),
     staleTime: 60000,
+  });
+}
+
+export function useKpisCEO() {
+  const filters = useFilterParams();
+  return useQuery({
+    queryKey: queryKeys.insightsKpis(filters),
+    queryFn: () => apiService.getInsightsKpis(filters),
+    staleTime: 60000,
+    refetchInterval: 120000,
   });
 }
 
@@ -260,6 +288,51 @@ export function useInventarioAgotados() {
   return useQuery({
     queryKey: queryKeys.inventarioAgotados,
     queryFn: () => apiService.getInventarioAgotados(),
+    staleTime: 120000,
+  });
+}
+
+export function useInventarioLista(estado?: string) {
+  return useQuery({
+    queryKey: queryKeys.inventarioLista(estado),
+    queryFn: () =>
+      apiService.getInventario({
+        estado,
+        limite: 200,
+      }),
+    staleTime: 60000,
+  });
+}
+
+export function useInventarioPorFamilia() {
+  return useQuery({
+    queryKey: queryKeys.inventarioPorFamilia,
+    queryFn: () => apiService.getInventarioPorFamilia(),
+    staleTime: 120000,
+  });
+}
+
+export function useInventarioPorProveedor() {
+  return useQuery({
+    queryKey: queryKeys.inventarioPorProveedor,
+    queryFn: () => apiService.getInventarioPorProveedor(),
+    staleTime: 120000,
+  });
+}
+
+export function useStockoutRate() {
+  return useQuery({
+    queryKey: queryKeys.stockoutRate,
+    queryFn: () => apiService.getStockoutRate(),
+    staleTime: 120000,
+  });
+}
+
+export function useMargenesGmroi() {
+  const filters = useFilterParams();
+  return useQuery({
+    queryKey: queryKeys.margenesGmroi(filters),
+    queryFn: () => apiService.getMargenesGmroi(filters),
     staleTime: 120000,
   });
 }

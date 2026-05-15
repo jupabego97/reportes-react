@@ -22,6 +22,7 @@ from app.services.ventas import VentasService
 from app.services.margenes import MargenesService
 from app.services.predicciones import PrediccionesService
 from app.services.abc import ABCService
+from app.services.inventario import InventarioService
 from app.cache import (
     PREDICCIONES_CACHE,
     PREDICCIONES_DESGLOSE_CACHE,
@@ -162,6 +163,36 @@ async def get_margenes(
     return await service.get_analisis_margenes(filters)
 
 
+@router.get("/margenes/gmroi")
+async def get_margenes_gmroi(
+    filters: FilterParams = Depends(get_filter_params),
+    db: AsyncSession = Depends(get_db),
+):
+    """GMROI por familia: margen del período / valor inventario actual (proxy)."""
+    ventas_service = VentasService(db)
+    margenes = MargenesService(ventas_service)
+    data = await margenes.get_analisis_margenes(filters)
+    inv = InventarioService(db)
+    valor_por_fam = {x["familia"]: float(x.get("valor") or 0) for x in await inv.get_valor_por_familia()}
+    rows = []
+    for row in data.margenes_por_familia or []:
+        fam = row.get("familia") or "Sin familia"
+        inv_val = valor_por_fam.get(fam, 0.0)
+        mt = float(row.get("margen_total") or 0)
+        gmroi = round(mt / inv_val, 3) if inv_val > 0 else None
+        rows.append(
+            {
+                "familia": fam,
+                "gmroi": gmroi,
+                "margen_total": round(mt, 2),
+                "valor_inventario": round(inv_val, 2),
+            }
+        )
+    rows = [r for r in rows if r.get("gmroi") is not None]
+    rows.sort(key=lambda x: float(x["gmroi"] or 0), reverse=True)
+    return rows
+
+
 @router.get("/predicciones", response_model=PrediccionResponse)
 async def get_predicciones(
     filters: FilterParams = Depends(get_filter_params),
@@ -214,10 +245,16 @@ async def get_predicciones_backtest(
 @router.get("/abc")
 async def get_abc(
     filters: FilterParams = Depends(get_filter_params),
+    criterio: str = Query(
+        "ventas",
+        description="ventas | cantidad | margen | frecuencia",
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     """Obtiene análisis ABC."""
+    if criterio not in ("ventas", "cantidad", "margen", "frecuencia"):
+        criterio = "ventas"
     ventas_service = VentasService(db)
     service = ABCService(ventas_service)
-    return await service.get_analisis_abc(filters)
+    return await service.get_analisis_abc(filters, criterio)
 

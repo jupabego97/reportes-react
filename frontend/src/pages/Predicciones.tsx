@@ -5,11 +5,12 @@ import { TrendingUp, Calendar, Target, AlertCircle, BarChart3 } from 'lucide-rea
 import { FilterPanel } from '../components/filters/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
-import { usePredicciones } from '../hooks/useApi';
+import { usePredicciones, usePrediccionesBacktest } from '../hooks/useApi';
 import { Alert, AlertDescription } from '../components/ui/alert';
 
 export function Predicciones() {
   const { data, isLoading, error } = usePredicciones();
+  const { data: backtest, isLoading: loadingBt } = usePrediccionesBacktest(4);
 
   if (error) {
     return (
@@ -102,6 +103,27 @@ export function Predicciones() {
 
       {/* Filtros */}
       <FilterPanel />
+
+      {!loadingBt && backtest && (backtest.semanas ?? 0) > 0 && (
+        <Card className="border-primary/20 bg-muted/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Precision del forecast (walk-forward, 4 semanas)</CardTitle>
+            <CardDescription>
+              WAPE y MAPE promedio sobre ventanas recientes; complementa el MAPE in-sample de la tarjeta inferior.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-6 text-sm">
+            <div>
+              <span className="text-muted-foreground">WAPE</span>{' '}
+              <span className="text-xl font-bold">{backtest.wape_promedio ?? '—'}%</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">MAPE</span>{' '}
+              <span className="text-xl font-bold">{backtest.mape_promedio ?? '—'}%</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="grid gap-6">

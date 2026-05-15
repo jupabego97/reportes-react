@@ -175,9 +175,11 @@ async def export_orden_compra_csv(
 ):
     """Exporta orden de compra a CSV."""
     from app.services.compras import ComprasService
-    
+    from app.services.predicciones import PrediccionesService
+
     ventas_service = VentasService(db)
-    service = ComprasService(db, ventas_service)
+    pred = PrediccionesService(ventas_service)
+    service = ComprasService(db, ventas_service, pred)
     orden = await service.get_orden_compra(proveedor, filters, prioridad_minima)
     
     # Convertir a DataFrame
@@ -217,9 +219,11 @@ async def export_orden_compra_excel(
 ):
     """Exporta orden de compra a Excel."""
     from app.services.compras import ComprasService
-    
+    from app.services.predicciones import PrediccionesService
+
     ventas_service = VentasService(db)
-    service = ComprasService(db, ventas_service)
+    pred = PrediccionesService(ventas_service)
+    service = ComprasService(db, ventas_service, pred)
     orden = await service.get_orden_compra(proveedor, filters, prioridad_minima)
     
     # Convertir a DataFrame
