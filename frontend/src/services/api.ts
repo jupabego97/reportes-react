@@ -182,16 +182,6 @@ export const apiService = {
   getSugerenciasCompra: (filters: FilterParams) =>
     api.get<any>('/api/compras/sugerencias', filters),
 
-  // Compras v2 — historial completo 40 meses
-  getSugerenciasV2: (proveedor?: string) =>
-    api.get<any[]>('/api/compras/v2/sugerencias', proveedor ? { proveedor } : undefined),
-
-  getUrgenciasProveedor: () =>
-    api.get<any[]>('/api/compras/v2/urgencias-proveedor'),
-
-  exportPedidoExcel: (proveedor: string) =>
-    api.getBlob('/api/compras/v2/export-pedido', { proveedor }),
-
   getResumenProveedoresCompra: (filters: FilterParams) =>
     api.get<any[]>('/api/compras/proveedores', filters),
 
@@ -252,6 +242,9 @@ export const apiService = {
 
   exportPDF: (filters: FilterParams) =>
     api.getBlob('/api/export/pdf', filters),
+
+  exportOrdenCompraExcel: (proveedor: string, filters: FilterParams) =>
+    api.getBlob(`/api/export/orden-compra/${encodeURIComponent(proveedor)}/excel`, filters),
 
   // Analista IA
   preguntarAnalista: (pregunta: string, historial?: Array<{ role: string; content: string }>) =>

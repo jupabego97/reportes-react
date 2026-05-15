@@ -1,7 +1,30 @@
 import { useMemo } from 'react';
+import type { VariantProps } from 'class-variance-authority';
+import { badgeVariants } from '../components/ui/badge';
 
 /** Prioridades que disparan acción inmediata de compra */
 export const PRIORIDAD_URGENCIA = new Set(['🔴 Urgente', '🟠 Alta']);
+
+export const PRIORIDADES_V1 = ['🔴 Urgente', '🟠 Alta', '🟡 Media', '🟢 Baja'] as const;
+
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>;
+
+export const URGENCIA_CONFIG: Record<
+  string,
+  { label: string; badgeVariant: BadgeVariant }
+> = {
+  '🔴 Urgente': { label: 'Urgente', badgeVariant: 'destructive' },
+  '🟠 Alta': { label: 'Alta', badgeVariant: 'warning' },
+  '🟡 Media': { label: 'Media', badgeVariant: 'secondary' },
+  '🟢 Baja': { label: 'Baja', badgeVariant: 'outline' },
+};
+
+export function useUrgenciaConfig(prioridad?: string) {
+  return useMemo(() => {
+    const cfg = URGENCIA_CONFIG[prioridad || ''];
+    return cfg ?? { label: prioridad || '—', badgeVariant: 'outline' as BadgeVariant };
+  }, [prioridad]);
+}
 
 export type SugerenciaCompraRow = {
   prioridad?: string;
@@ -10,6 +33,10 @@ export type SugerenciaCompraRow = {
   proveedor?: string;
   costo_estimado?: number;
   cantidad_sugerida?: number;
+  cantidad_disponible?: number;
+  precio_compra?: number;
+  clasificacion_abc?: string;
+  punto_reorden?: number;
 };
 
 /**
@@ -61,4 +88,43 @@ export function useProveedoresUrgenciaAgrupados(comprarUrgente: SugerenciaCompra
     }
     return Array.from(map.values()).sort((a, b) => b.costo - a.costo);
   }, [comprarUrgente]);
+}
+
+export type ProveedorCardResumen = {
+  proveedor: string;
+  urgente: number;
+  alta: number;
+  media: number;
+  baja: number;
+  productos: number;
+  costo: number;
+};
+
+/** Resumen por proveedor con conteos de prioridad (v1 emoji) para las cards. */
+export function useProveedoresCardResumen(sugerencias: SugerenciaCompraRow[] | undefined) {
+  return useMemo(() => {
+    const map = new Map<string, ProveedorCardResumen>();
+    for (const s of Array.isArray(sugerencias) ? sugerencias : []) {
+      const proveedor = s.proveedor || 'Sin proveedor';
+      const prev = map.get(proveedor) || {
+        proveedor,
+        urgente: 0,
+        alta: 0,
+        media: 0,
+        baja: 0,
+        productos: 0,
+        costo: 0,
+      };
+      prev.productos += 1;
+      prev.costo += Number(s.costo_estimado || 0);
+      if (s.prioridad === '🔴 Urgente') prev.urgente += 1;
+      else if (s.prioridad === '🟠 Alta') prev.alta += 1;
+      else if (s.prioridad === '🟡 Media') prev.media += 1;
+      else if (s.prioridad === '🟢 Baja') prev.baja += 1;
+      map.set(proveedor, prev);
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => b.urgente * 1000 + b.alta * 100 + b.costo - (a.urgente * 1000 + a.alta * 100 + a.costo)
+    );
+  }, [sugerencias]);
 }
