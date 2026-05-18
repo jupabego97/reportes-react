@@ -6,6 +6,7 @@ import type {
   VentasResponse,
   FiltrosOpciones,
   Metricas,
+  MetricasSectorResponse,
   PrediccionResponse,
 } from '../types';
 
@@ -201,6 +202,9 @@ export const apiService = {
 
   getInsightsKpis: (filters: FilterParams) =>
     api.get<Record<string, unknown>>('/api/insights/kpis', filters),
+
+  getMetricasSector: (filters: FilterParams) =>
+    api.get<MetricasSectorResponse>('/api/metricas-sector/resumen', filters),
 
   // Facturas proveedor
   getFacturasProveedor: (params?: { proveedor?: string; dias_plazo?: number; estado?: string }) =>

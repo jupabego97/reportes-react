@@ -94,11 +94,12 @@ class ABCService:
         for nombre, data in productos_ordenados:
             valor_criterio = key_func((nombre, data))
             porcentaje = (valor_criterio / total_valor * 100) if total_valor > 0 else 0
+            acumulado_anterior = acumulado
             acumulado += porcentaje
-            
-            if acumulado <= 80:
+
+            if acumulado_anterior < 80:
                 clasificacion = "A"
-            elif acumulado <= 95:
+            elif acumulado_anterior < 95:
                 clasificacion = "B"
             else:
                 clasificacion = "C"

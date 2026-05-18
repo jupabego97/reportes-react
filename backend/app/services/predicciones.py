@@ -414,8 +414,17 @@ class PrediccionesService:
     ) -> dict:
         """Backtesting rolling: WAPE/MAPE sobre últimos N semanas (walk-forward)."""
         ventas, _ = await self.ventas_service.get_ventas(filters)
+        empty = {
+            "semanas": 0,
+            "wape_promedio": None,
+            "mape_promedio": None,
+            "mae_promedio": None,
+            "rmse_promedio": None,
+            "bias_pct_promedio": None,
+            "detalle": [],
+        }
         if not ventas:
-            return {"semanas": 0, "wape_promedio": None, "mape_promedio": None, "detalle": []}
+            return empty
 
         ventas_dia: Dict[date, float] = {}
         for v in ventas:
@@ -423,7 +432,7 @@ class PrediccionesService:
             ventas_dia[f] = ventas_dia.get(f, 0) + (v.total_venta or 0)
         fechas_ord = sorted(ventas_dia.keys())
         if len(fechas_ord) < 14:  # Mínimo 2 semanas
-            return {"semanas": 0, "wape_promedio": None, "mape_promedio": None, "detalle": []}
+            return empty
 
         resultados = []
         for i in range(semanas):
@@ -446,25 +455,46 @@ class PrediccionesService:
             real_arr = np.array(valores_test)
             total_real = float(np.sum(real_arr))
             if total_real > 0:
-                wape = float(np.sum(np.abs(real_arr - pred_arr)) / total_real * 100)
+                errores = real_arr - pred_arr
+                errores_abs = np.abs(errores)
+                wape = float(np.sum(errores_abs) / total_real * 100)
+                bias_pct = float(np.sum(pred_arr - real_arr) / total_real * 100)
             else:
                 wape = 0.0
+                bias_pct = 0.0
             mask = real_arr > 0
             mape = (
                 float(np.mean(np.abs(real_arr[mask] - pred_arr[mask]) / real_arr[mask] * 100))
                 if np.any(mask)
                 else 0.0
             )
-            resultados.append({"semana": i + 1, "wape": round(wape, 2), "mape": round(mape, 2)})
+            mae = float(np.mean(np.abs(real_arr - pred_arr)))
+            rmse = float(np.sqrt(np.mean((real_arr - pred_arr) ** 2)))
+            resultados.append(
+                {
+                    "semana": i + 1,
+                    "wape": round(wape, 2),
+                    "mape": round(mape, 2),
+                    "mae": round(mae, 2),
+                    "rmse": round(rmse, 2),
+                    "bias_pct": round(bias_pct, 2),
+                }
+            )
 
         if not resultados:
-            return {"semanas": 0, "wape_promedio": None, "mape_promedio": None, "detalle": []}
+            return empty
         wape_avg = round(float(np.mean([r["wape"] for r in resultados])), 2)
         mape_avg = round(float(np.mean([r["mape"] for r in resultados])), 2)
+        mae_avg = round(float(np.mean([r["mae"] for r in resultados])), 2)
+        rmse_avg = round(float(np.mean([r["rmse"] for r in resultados])), 2)
+        bias_avg = round(float(np.mean([r["bias_pct"] for r in resultados])), 2)
         return {
             "semanas": len(resultados),
             "wape_promedio": wape_avg,
             "mape_promedio": mape_avg,
+            "mae_promedio": mae_avg,
+            "rmse_promedio": rmse_avg,
+            "bias_pct_promedio": bias_avg,
             "detalle": resultados,
         }
 

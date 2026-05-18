@@ -146,6 +146,61 @@ export interface PrediccionResponse {
   wape?: number;
 }
 
+export interface SectorMetric {
+  value: number | string | boolean | null;
+  label: string;
+  formula: string;
+  quality: 'standard' | 'proxy' | 'unavailable';
+  source_note: string;
+}
+
+export interface ResumenVentanaTemporal {
+  ventas: number;
+  facturas: number;
+  unidades: number;
+  lineas: number;
+  ticket_promedio: number;
+  unidades_por_ticket: number;
+  lineas_por_ticket: number;
+  asp: number;
+}
+
+export interface VariacionVentanaTemporal {
+  ventas_pct?: number | null;
+  unidades_pct?: number | null;
+  ticket_pct?: number | null;
+  facturas_pct?: number | null;
+}
+
+export interface MetricasSectorResponse {
+  periodo: { fecha_inicio: string; fecha_fin: string };
+  kpis: Record<string, SectorMetric>;
+  resumen_temporal: {
+    hoy: ResumenVentanaTemporal;
+    ultimos_7d: ResumenVentanaTemporal;
+    ultimos_30d: ResumenVentanaTemporal;
+    variacion: {
+      hoy_vs_ayer: VariacionVentanaTemporal;
+      ultimos_7d_vs_previos_7d: VariacionVentanaTemporal;
+      ultimos_30d_vs_previos_30d: VariacionVentanaTemporal;
+    };
+  };
+  ventas_diarias: Record<string, any>[];
+  ticket_diario: Record<string, any>[];
+  ventas_por_semana: Record<string, any>[];
+  ventas_por_mes: Record<string, any>[];
+  ventas_por_familia: Record<string, any>[];
+  margen_diario: Record<string, any>[];
+  ticket_por_vendedor: Record<string, any>[];
+  ticket_por_metodo: Record<string, any>[];
+  inventario_scatter: Record<string, any>[];
+  salud_inventario: Record<string, number>;
+  abc_pareto: Record<string, any>[];
+  forecast_backtest: Record<string, any>;
+  proveedores_vencimientos: Record<string, any>[];
+  supplier_price_variance: Record<string, any>[];
+}
+
 // ABC
 export interface ProductoABC {
   nombre: string;

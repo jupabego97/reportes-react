@@ -57,6 +57,7 @@ export const queryKeys = {
   resumenComprasProveedores: (filters: FilterParams) => ['resumen-compras-proveedores', filters] as const,
   insights: (filters: FilterParams) => ['insights', filters] as const,
   insightsKpis: (filters: FilterParams) => ['insights-kpis', filters] as const,
+  metricasSector: (filters: FilterParams) => ['metricas-sector', filters] as const,
   facturasProveedor: (params?: Record<string, unknown>) => ['facturas-proveedor', params ?? {}] as const,
   facturasProveedorResumen: (params?: Record<string, unknown>) => ['facturas-proveedor-resumen', params ?? {}] as const,
   productoDetalle: (nombre: string) => ['producto-detalle', nombre] as const,
@@ -238,6 +239,16 @@ export function useKpisCEO() {
   return useQuery({
     queryKey: queryKeys.insightsKpis(filters),
     queryFn: () => apiService.getInsightsKpis(filters),
+    staleTime: 60000,
+    refetchInterval: 120000,
+  });
+}
+
+export function useMetricasSector() {
+  const filters = useFilterParams();
+  return useQuery({
+    queryKey: queryKeys.metricasSector(filters),
+    queryFn: () => apiService.getMetricasSector(filters),
     staleTime: 60000,
     refetchInterval: 120000,
   });

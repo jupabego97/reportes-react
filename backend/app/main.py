@@ -18,6 +18,7 @@ from app.routes.facturas_proveedor import router as facturas_proveedor_router
 from app.routes.inventario import router as inventario_router
 from app.routes.compras_v2 import router as compras_v2_router
 from app.routes.analista import router as analista_router
+from app.routes.metricas_sector import router as metricas_sector_router
 
 settings = get_settings()
 
@@ -51,6 +52,7 @@ app.include_router(export_router)
 app.include_router(insights_router)
 app.include_router(compras_v2_router)
 app.include_router(analista_router)
+app.include_router(metricas_sector_router)
 
 
 @app.get("/")

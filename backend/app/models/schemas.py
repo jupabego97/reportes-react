@@ -2,7 +2,7 @@
 Esquemas Pydantic para request/response.
 """
 from datetime import date, datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -292,6 +292,40 @@ class OrdenCompraResponse(BaseModel):
     total_unidades: int
     costo_total: float
     items: List[SugerenciaCompraResponse]
+
+
+# =============================================================================
+# Métricas sector retail
+# =============================================================================
+
+class SectorMetric(BaseModel):
+    """KPI con contexto de fórmula y calidad de fuente."""
+    value: Optional[float | int | str | bool] = None
+    label: str
+    formula: str
+    quality: str = "standard"  # standard | proxy | unavailable
+    source_note: str = ""
+
+
+class MetricasSectorResponse(BaseModel):
+    """Respuesta consolidada para Dashboard Ejecutivo estándar retail."""
+    periodo: Dict[str, Any]
+    kpis: Dict[str, SectorMetric]
+    resumen_temporal: Dict[str, Any] = {}
+    ventas_diarias: List[Dict[str, Any]] = []
+    ticket_diario: List[Dict[str, Any]] = []
+    ventas_por_semana: List[Dict[str, Any]] = []
+    ventas_por_mes: List[Dict[str, Any]] = []
+    ventas_por_familia: List[Dict[str, Any]] = []
+    margen_diario: List[Dict[str, Any]] = []
+    ticket_por_vendedor: List[Dict[str, Any]] = []
+    ticket_por_metodo: List[Dict[str, Any]] = []
+    inventario_scatter: List[Dict[str, Any]] = []
+    salud_inventario: Dict[str, float] = {}
+    abc_pareto: List[Dict[str, Any]] = []
+    forecast_backtest: Dict[str, Any] = {}
+    proveedores_vencimientos: List[Dict[str, Any]] = []
+    supplier_price_variance: List[Dict[str, Any]] = []
 
 
 
