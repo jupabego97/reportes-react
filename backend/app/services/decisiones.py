@@ -621,12 +621,14 @@ class DecisionesService:
         limite: int = 50,
     ) -> List[Dict[str, Any]]:
         """Bandeja de decisiones ordenada por prioridad y dinero en juego."""
+        # Los casts explícitos son necesarios: asyncpg no puede inferir el tipo
+        # de un parámetro usado en ":param IS NULL" y falla con AmbiguousParameterError.
         query = """
             SELECT id, codigo_alerta, prioridad, titulo, que_pasa, por_que, que_hacer,
                    impacto_dinero, dueno, vence_en, estado, datos, created_at
             FROM decisiones
-            WHERE (:estado = 'todas' OR estado = :estado)
-              AND (:dueno IS NULL OR dueno = :dueno)
+            WHERE (CAST(:estado AS TEXT) = 'todas' OR estado = CAST(:estado AS TEXT))
+              AND (CAST(:dueno AS TEXT) IS NULL OR dueno = CAST(:dueno AS TEXT))
             ORDER BY prioridad ASC, impacto_dinero DESC NULLS LAST, created_at DESC
             LIMIT :limite
         """
