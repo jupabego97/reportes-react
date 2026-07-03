@@ -279,6 +279,23 @@ export const apiService = {
   getCalidadDatos: () => api.get<any>('/api/maestros/calidad'),
   getMaestrosResumen: () => api.get<any>('/api/maestros/resumen'),
 
+  // Forecast (Fase 2)
+  consolidarHistorial: () => api.post<any>('/api/forecast/consolidar-historial'),
+  generarForecast: (horizonte_dias?: number) =>
+    api.post<any>(`/api/forecast/generar${horizonte_dias ? `?horizonte_dias=${horizonte_dias}` : ''}`),
+  ejecutarBacktest: (dias_holdout?: number) =>
+    api.post<any>(`/api/forecast/backtest${dias_holdout ? `?dias_holdout=${dias_holdout}` : ''}`),
+  getUltimoBacktest: () => api.get<any>('/api/forecast/backtest'),
+  getPrecisionForecast: (dias?: number) => api.get<any>('/api/forecast/precision', { dias }),
+  getVentaPerdida: (dias?: number) => api.get<any>('/api/forecast/venta-perdida', { dias }),
+
+  // Reabastecimiento con SS dinámico (Fase 2)
+  getSugerenciasReabastecimiento: (params?: {
+    dias_historia?: number;
+    horizonte_cobertura_dias?: number;
+  }) => api.get<any[]>('/api/reabastecimiento/sugerencias', params),
+  getResumenReabastecimiento: () => api.get<any>('/api/reabastecimiento/resumen'),
+
   // Inventario perpetuo (Fase 1)
   getExactitudInventario: (dias?: number) =>
     api.get<any>('/api/inventario-perpetuo/exactitud', { dias }),

@@ -480,6 +480,105 @@ class DecisionesService:
         )
         return 1 if emitida else 0
 
+    async def _detectar_forecast_degradado(self) -> int:
+        """P4 · admin — el forecast pierde contra el baseline o su error explotó.
+
+        Regla de gobernanza (Fase 2): nunca decidir con un modelo
+        silenciosamente roto.
+        """
+        try:
+            from app.services.forecast import ForecastService
+
+            backtest = await ForecastService(self.db).get_ultimo_backtest()
+        except Exception:
+            await self.db.rollback()
+            return 0
+        if not backtest:
+            return 0
+
+        wc = backtest.get("wmape_champion")
+        wb = backtest.get("wmape_baseline")
+        if wc is None:
+            return 0
+        pierde_contra_baseline = wb is not None and wc > wb
+        error_alto = wc > 0.6
+        if not pierde_contra_baseline and not error_alto:
+            return 0
+
+        motivo = (
+            f"pierde contra el baseline ingenuo (WMAPE {wc:.0%} vs {wb:.0%})"
+            if pierde_contra_baseline
+            else f"su error es demasiado alto (WMAPE {wc:.0%})"
+        )
+        emitida = await self._emitir(
+            codigo_alerta="forecast_degradado",
+            prioridad="P4",
+            titulo="El modelo de forecast está degradado: no usarlo para comprar",
+            que_pasa=(
+                f"En el último backtest ({backtest['productos_evaluados']} productos, "
+                f"{backtest['dias_holdout']} días de holdout) el modelo champion {motivo}."
+            ),
+            por_que=(
+                "Causas típicas: cambio de patrón de demanda (promociones, estacionalidad "
+                "nueva), historia contaminada por quiebres largos, o datos sin consolidar. "
+                "Un modelo que no le gana al promedio simple no aporta y puede dañar."
+            ),
+            que_hacer=(
+                "Mientras se corrige, usar el baseline (promedio por día de semana) para "
+                "reabastecimiento. Revisar la consolidación del historial y volver a correr "
+                "el backtest tras acumular más días de historia."
+            ),
+            dueno="admin",
+            impacto_dinero=None,
+            clave_dedup=f"forecast_degradado:{datetime.now(timezone.utc):%Y-%W}",
+            datos=backtest,
+        )
+        return 1 if emitida else 0
+
+    async def _detectar_venta_perdida_semanal(self) -> int:
+        """P3 · comprador — resumen semanal de venta perdida por quiebres."""
+        try:
+            from app.services.forecast import ForecastService
+
+            vp = await ForecastService(self.db).get_venta_perdida(dias=7)
+        except Exception:
+            await self.db.rollback()
+            return 0
+
+        total = float(vp.get("venta_perdida_total") or 0)
+        if total <= 0 or vp.get("productos_en_quiebre", 0) == 0:
+            return 0
+
+        margen = float(vp.get("margen_perdido_total") or 0)
+        emitida = await self._emitir(
+            codigo_alerta="venta_perdida_semanal",
+            prioridad="P3",
+            titulo=(
+                f"Venta perdida por quiebres esta semana: ${total:,.0f} "
+                f"({vp['productos_en_quiebre']} productos sin stock)"
+            ),
+            que_pasa=(
+                f"{vp['productos_en_quiebre']} productos con demanda comprobada están en "
+                f"quiebre. Venta no realizada estimada: ${total:,.0f}; margen no capturado: "
+                f"${margen:,.0f}."
+            ),
+            por_que=(
+                "La demanda se estimó con la velocidad de venta ANTERIOR al quiebre "
+                "(demanda censurada). Si estos productos siguen sin stock, la pérdida "
+                "crece cada día y el cliente aprende a comprar en otra parte."
+            ),
+            que_hacer=(
+                "Priorizar en la próxima orden de compra los productos del detalle "
+                "(ordenados por venta perdida). Revisar por qué el punto de reorden no "
+                "disparó a tiempo: ¿lead time del proveedor mal registrado?"
+            ),
+            dueno="comprador",
+            impacto_dinero=margen if margen > 0 else total,
+            clave_dedup=f"venta_perdida_semanal:{datetime.now(timezone.utc):%Y-%W}",
+            datos=vp.get("detalle", [])[:25],
+        )
+        return 1 if emitida else 0
+
     # ------------------------------------------------------------- orquestación
 
     async def evaluar(self) -> Dict[str, Any]:
@@ -492,6 +591,8 @@ class DecisionesService:
             self._detectar_inventario_muerto,
             self._detectar_facturas_por_vencer,
             self._detectar_exactitud_baja,
+            self._detectar_forecast_degradado,
+            self._detectar_venta_perdida_semanal,
         ]
         errores = []
         for detector in detectores:

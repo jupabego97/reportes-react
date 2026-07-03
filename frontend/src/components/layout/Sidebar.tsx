@@ -53,6 +53,7 @@ const destacadoNav: NavItem[] = [
 
 const operacionNav: NavItem[] = [
   { name: 'Hoy', href: '/', icon: CalendarCheck },
+  { name: 'Forecast', href: '/forecast', icon: LineChart },
   { name: 'Compras', href: '/compras', icon: PackageSearch },
   { name: 'Inventario', href: '/inventario', icon: Warehouse },
   { name: 'Proveedores', href: '/proveedores', icon: Truck },

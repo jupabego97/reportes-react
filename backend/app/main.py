@@ -22,6 +22,8 @@ from app.routes.metricas_sector import router as metricas_sector_router
 from app.routes.decisiones import router as decisiones_router
 from app.routes.maestros import router as maestros_router
 from app.routes.inventario_perpetuo import router as inventario_perpetuo_router
+from app.routes.forecast import router as forecast_router
+from app.routes.reabastecimiento import router as reabastecimiento_router
 
 settings = get_settings()
 
@@ -59,6 +61,8 @@ app.include_router(metricas_sector_router)
 app.include_router(decisiones_router)
 app.include_router(maestros_router)
 app.include_router(inventario_perpetuo_router)
+app.include_router(forecast_router)
+app.include_router(reabastecimiento_router)
 
 
 @app.get("/")
