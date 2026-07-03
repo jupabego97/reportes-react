@@ -36,7 +36,15 @@ class ForecastService:
 
         Idempotente: corre a diario (upsert por producto-fecha). Es el paso
         que convierte una foto de 30 días en una historia acumulada.
+
+        Sincroniza los maestros primero: el historial se indexa por producto_id
+        del maestro, así que sin maestro poblado no habría nada que consolidar
+        (y los productos nuevos deben entrar al maestro cada día).
         """
+        from app.services.maestros import MaestrosService
+
+        maestros = await MaestrosService(self.db).sincronizar()
+
         query = """
             INSERT INTO ventas_diarias_historicas
                 (producto_id, fecha, unidades, venta_neta, precio_promedio, costo_promedio)
@@ -48,7 +56,8 @@ class ForecastService:
                 AVG(v.precio),
                 AVG(v.precio_promedio_compra)
             FROM reportes_ventas_30dias v
-            JOIN productos p ON p.nombre = UPPER(TRIM(v.nombre))
+            JOIN productos p
+              ON p.nombre = REGEXP_REPLACE(UPPER(TRIM(v.nombre)), '\\s+', ' ', 'g')
             WHERE v.fecha_venta IS NOT NULL
             GROUP BY p.id, v.fecha_venta
             ON CONFLICT (producto_id, fecha) DO UPDATE SET
@@ -74,6 +83,8 @@ class ForecastService:
             "historia_desde": str(fila[0]) if fila and fila[0] else None,
             "historia_hasta": str(fila[1]) if fila and fila[1] else None,
             "productos_con_historia": int(fila[2] or 0) if fila else 0,
+            "maestros_sincronizados": maestros.get("productos_desde_items", 0)
+            + maestros.get("productos_solo_en_ventas", 0),
         }
 
     # ------------------------------------------------------------- lectura
