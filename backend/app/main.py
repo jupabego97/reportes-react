@@ -19,6 +19,9 @@ from app.routes.inventario import router as inventario_router
 from app.routes.compras_v2 import router as compras_v2_router
 from app.routes.analista import router as analista_router
 from app.routes.metricas_sector import router as metricas_sector_router
+from app.routes.decisiones import router as decisiones_router
+from app.routes.maestros import router as maestros_router
+from app.routes.inventario_perpetuo import router as inventario_perpetuo_router
 
 settings = get_settings()
 
@@ -53,6 +56,9 @@ app.include_router(insights_router)
 app.include_router(compras_v2_router)
 app.include_router(analista_router)
 app.include_router(metricas_sector_router)
+app.include_router(decisiones_router)
+app.include_router(maestros_router)
+app.include_router(inventario_perpetuo_router)
 
 
 @app.get("/")

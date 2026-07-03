@@ -256,4 +256,35 @@ export const apiService = {
       '/api/analista/preguntar',
       { pregunta, historial },
     ),
+
+  // Motor de decisiones (Fase 1)
+  getDecisiones: (params?: { dueno?: string; estado?: string; limite?: number }) =>
+    api.get<any[]>('/api/decisiones', params),
+
+  getDecisionesResumen: () =>
+    api.get<{
+      pendientes: number;
+      impacto_dinero_total: number;
+      por_prioridad: Record<string, { pendientes: number; impacto_dinero: number }>;
+    }>('/api/decisiones/resumen'),
+
+  evaluarDecisiones: () =>
+    api.post<{ decisiones_emitidas: number; errores: any[] }>('/api/decisiones/evaluar'),
+
+  resolverDecision: (id: number, estado: 'aprobada' | 'rechazada' | 'resuelta', nota?: string) =>
+    api.post<{ id: number; estado: string }>(`/api/decisiones/${id}/resolver`, { estado, nota }),
+
+  // Maestros y calidad de datos (Fase 1)
+  sincronizarMaestros: () => api.post<any>('/api/maestros/sincronizar'),
+  getCalidadDatos: () => api.get<any>('/api/maestros/calidad'),
+  getMaestrosResumen: () => api.get<any>('/api/maestros/resumen'),
+
+  // Inventario perpetuo (Fase 1)
+  getExactitudInventario: (dias?: number) =>
+    api.get<any>('/api/inventario-perpetuo/exactitud', { dias }),
+  getPlanConteos: (limite?: number) =>
+    api.get<any[]>('/api/inventario-perpetuo/plan-conteos', { limite }),
+  registrarConteo: (nombre_producto: string, stock_fisico: number, motivo?: string) =>
+    api.post<any>('/api/inventario-perpetuo/conteos', { nombre_producto, stock_fisico, motivo }),
+  cargarStockInicial: () => api.post<any>('/api/inventario-perpetuo/carga-inicial'),
 };

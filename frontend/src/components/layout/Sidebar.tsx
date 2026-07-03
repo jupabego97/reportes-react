@@ -22,6 +22,7 @@ import {
   Lightbulb,
   MessageSquareText,
   PieChart,
+  ListChecks,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -45,7 +46,10 @@ import {
 
 type NavItem = { name: string; href: string; icon: LucideIcon };
 
-const destacadoNav: NavItem[] = [{ name: 'Vista CEO', href: '/ceo', icon: PieChart }];
+const destacadoNav: NavItem[] = [
+  { name: 'Decisiones', href: '/decisiones', icon: ListChecks },
+  { name: 'Vista CEO', href: '/ceo', icon: PieChart },
+];
 
 const operacionNav: NavItem[] = [
   { name: 'Hoy', href: '/', icon: CalendarCheck },

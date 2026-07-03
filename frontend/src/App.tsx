@@ -20,6 +20,7 @@ import { ProductoDetalle } from './pages/ProductoDetalle';
 import { Analista } from './pages/Analista';
 import { Insights } from './pages/Insights';
 import { CEODashboard } from './pages/CEODashboard';
+import { Decisiones } from './pages/Decisiones';
 import { initializeTheme } from './stores/useThemeStore';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -69,7 +70,7 @@ function App() {
               <Route index element={<Hoy />} />
               <Route path="ventas" element={<Dashboard />} />
               <Route path="compras" element={<Compras />} />
-              <Route path="decisiones" element={<Navigate to="/compras" replace />} />
+              <Route path="decisiones" element={<Decisiones />} />
               <Route path="inventario" element={<Inventario />} />
               <Route path="proveedores" element={<Proveedores />} />
               <Route path="facturas" element={<FacturasProveedor />} />

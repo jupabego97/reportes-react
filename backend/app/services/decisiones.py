@@ -1,0 +1,602 @@
+"""
+Motor de decisiones (Fase 1) — la bandeja que reemplaza a los dashboards.
+
+Formato obligatorio de toda alerta (regla del Retail Intelligence OS):
+    QUÉ pasa + POR QUÉ (causa probable) + QUÉ HACER (acción concreta)
+    + CUÁNTO vale (impacto en dinero) + DUEÑO + SLA.
+
+Alertas sin acción no existen. Cada decisión registra su resolución para
+el circuito de aprendizaje (¿se aceptó? ¿sirvió?).
+"""
+import json
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import semantica
+
+# SLA por prioridad (horas hasta vencer)
+SLA_HORAS = {"P1": 4, "P2": 24, "P3": 168, "P4": 720}
+
+ESTADOS_VALIDOS = {"pendiente", "aprobada", "rechazada", "resuelta", "expirada"}
+
+
+class DecisionesService:
+    """Evalúa detectores, deduplica y administra la bandeja de decisiones."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    # ------------------------------------------------------------ persistencia
+
+    async def _emitir(
+        self,
+        codigo_alerta: str,
+        prioridad: str,
+        titulo: str,
+        que_pasa: str,
+        por_que: str,
+        que_hacer: str,
+        dueno: str,
+        clave_dedup: str,
+        impacto_dinero: Optional[float] = None,
+        datos: Optional[Any] = None,
+    ) -> bool:
+        """Inserta la decisión si no existe otra pendiente con la misma clave."""
+        existe = await self.db.execute(
+            text(
+                """
+                SELECT 1 FROM decisiones
+                WHERE clave_dedup = :clave AND estado = 'pendiente'
+                LIMIT 1
+                """
+            ),
+            {"clave": clave_dedup},
+        )
+        if existe.fetchone():
+            return False
+
+        vence_en = datetime.now(timezone.utc) + timedelta(hours=SLA_HORAS.get(prioridad, 168))
+        await self.db.execute(
+            text(
+                """
+                INSERT INTO decisiones
+                    (codigo_alerta, prioridad, titulo, que_pasa, por_que, que_hacer,
+                     impacto_dinero, dueno, vence_en, datos, clave_dedup)
+                VALUES
+                    (:codigo, :prioridad, :titulo, :que_pasa, :por_que, :que_hacer,
+                     :impacto, :dueno, :vence, CAST(:datos AS JSON), :clave)
+                """
+            ),
+            {
+                "codigo": codigo_alerta,
+                "prioridad": prioridad,
+                "titulo": titulo,
+                "que_pasa": que_pasa,
+                "por_que": por_que,
+                "que_hacer": que_hacer,
+                "impacto": round(impacto_dinero, 2) if impacto_dinero is not None else None,
+                "dueno": dueno,
+                "vence": vence_en,
+                "datos": json.dumps(datos, default=str) if datos is not None else None,
+                "clave": clave_dedup,
+            },
+        )
+        return True
+
+    # -------------------------------------------------------------- detectores
+
+    async def _detectar_margen_negativo(self) -> int:
+        """P1 · pricing — productos vendiéndose bajo su costo (últimos 7 días)."""
+        query = """
+            SELECT
+                nombre,
+                AVG(precio) as precio_promedio,
+                AVG(precio_promedio_compra) as costo_promedio,
+                SUM(cantidad) as unidades,
+                SUM((precio - precio_promedio_compra) * cantidad) as perdida_total
+            FROM reportes_ventas_30dias
+            WHERE precio_promedio_compra IS NOT NULL
+              AND precio < precio_promedio_compra
+              AND fecha_venta >= CURRENT_DATE - INTERVAL '7 days'
+            GROUP BY nombre
+            ORDER BY perdida_total ASC
+        """
+        result = await self.db.execute(text(query))
+        filas = [dict(r._asdict()) for r in result.fetchall()]
+        if not filas:
+            return 0
+
+        perdida = abs(sum(float(f["perdida_total"] or 0) for f in filas))
+        emitida = await self._emitir(
+            codigo_alerta="margen_negativo",
+            prioridad="P1",
+            titulo=f"{len(filas)} productos vendiéndose bajo costo esta semana",
+            que_pasa=(
+                f"En los últimos 7 días, {len(filas)} productos se vendieron por debajo de su "
+                f"costo promedio de compra, con una pérdida acumulada de ${perdida:,.0f}."
+            ),
+            por_que=(
+                "Causas probables: costo desactualizado tras alza del proveedor, precio mal "
+                "digitado, o promoción sin piso de margen. Verificar primero el costo (la causa "
+                "más frecuente) antes de tocar el precio."
+            ),
+            que_hacer=(
+                "Para cada producto del detalle: 1) validar el costo contra la última factura "
+                "del proveedor; 2) si el costo es correcto, corregir el precio de venta hoy; "
+                "3) si hay promoción activa, suspenderla hasta definir piso."
+            ),
+            dueno="pricing",
+            impacto_dinero=perdida,
+            clave_dedup=f"margen_negativo:{datetime.now(timezone.utc):%Y-%W}",
+            datos=[
+                {
+                    "nombre": f["nombre"],
+                    "precio_promedio": round(float(f["precio_promedio"] or 0), 2),
+                    "costo_promedio": round(float(f["costo_promedio"] or 0), 2),
+                    "unidades": int(f["unidades"] or 0),
+                    "perdida": round(float(f["perdida_total"] or 0), 2),
+                }
+                for f in filas[:20]
+            ],
+        )
+        return 1 if emitida else 0
+
+    async def _detectar_quiebre_inminente(self) -> int:
+        """P2 · comprador — productos con venta activa que quebrarán en <7 días.
+
+        Impacto = margen perdido proyectado (velocidad × días descubiertos ×
+        margen real), usando la definición canónica de la capa semántica.
+        """
+        query = """
+            WITH ventas AS (
+                SELECT
+                    nombre,
+                    SUM(cantidad) as unidades_30d,
+                    AVG(precio) as precio_promedio,
+                    AVG(precio_promedio_compra) as costo_promedio,
+                    MAX(proveedor_moda) as proveedor
+                FROM reportes_ventas_30dias
+                WHERE fecha_venta >= CURRENT_DATE - INTERVAL '30 days'
+                GROUP BY nombre
+                HAVING SUM(cantidad) > 0
+            )
+            SELECT
+                v.nombre,
+                v.unidades_30d,
+                v.precio_promedio,
+                v.costo_promedio,
+                v.proveedor,
+                COALESCE(i.cantidad_disponible, 0) as stock_actual
+            FROM ventas v
+            LEFT JOIN items i ON UPPER(TRIM(i.nombre)) = UPPER(TRIM(v.nombre))
+        """
+        result = await self.db.execute(text(query))
+        filas = [dict(r._asdict()) for r in result.fetchall()]
+
+        en_riesgo = []
+        margen_en_riesgo_total = 0.0
+        for f in filas:
+            vd = semantica.venta_diaria(float(f["unidades_30d"] or 0), 30)
+            cobertura = semantica.dias_cobertura(float(f["stock_actual"] or 0), vd)
+            if cobertura is None or cobertura > semantica.DIAS_STOCK_MINIMO:
+                continue
+            # Días que quedarían descubiertos si se repone con lead time default
+            dias_descubiertos = max(semantica.LEAD_TIME_DEFAULT - cobertura, 0)
+            costo = float(f["costo_promedio"]) if f["costo_promedio"] is not None else None
+            mp = semantica.margen_perdido(
+                vd, dias_descubiertos, float(f["precio_promedio"] or 0), costo
+            )
+            vp = semantica.venta_perdida(vd, dias_descubiertos, float(f["precio_promedio"] or 0))
+            en_riesgo.append(
+                {
+                    "nombre": f["nombre"],
+                    "proveedor": f["proveedor"],
+                    "stock_actual": float(f["stock_actual"] or 0),
+                    "dias_cobertura": round(cobertura, 1),
+                    "venta_diaria": round(vd, 2),
+                    "venta_perdida_proyectada": round(vp, 2),
+                    "margen_perdido_proyectado": round(mp, 2) if mp is not None else None,
+                }
+            )
+            margen_en_riesgo_total += mp if mp is not None else vp * 0.0
+
+        if not en_riesgo:
+            return 0
+
+        en_riesgo.sort(key=lambda x: x["venta_perdida_proyectada"], reverse=True)
+        venta_perdida_total = sum(x["venta_perdida_proyectada"] for x in en_riesgo)
+
+        emitida = await self._emitir(
+            codigo_alerta="quiebre_inminente",
+            prioridad="P2",
+            titulo=f"{len(en_riesgo)} productos con venta activa quebrarán en menos de 7 días",
+            que_pasa=(
+                f"{len(en_riesgo)} productos tienen cobertura por debajo de "
+                f"{semantica.DIAS_STOCK_MINIMO} días a su velocidad de venta actual. "
+                f"Si no se repone hoy, la venta perdida proyectada es ${venta_perdida_total:,.0f}."
+            ),
+            por_que=(
+                "La cobertura cayó bajo el lead time de reposición (7 días por defecto): "
+                "aunque se ordene hoy, habrá días descubiertos. Causas típicas: venta mayor "
+                "a la esperada, pedido anterior corto, o retraso del proveedor."
+            ),
+            que_hacer=(
+                "Generar hoy la orden de compra para los productos del detalle, empezando por "
+                "los de mayor venta perdida proyectada. Si el proveedor no puede entregar a "
+                "tiempo, evaluar proveedor alterno del comparativo de compras."
+            ),
+            dueno="comprador",
+            impacto_dinero=margen_en_riesgo_total if margen_en_riesgo_total > 0 else venta_perdida_total,
+            clave_dedup=f"quiebre_inminente:{datetime.now(timezone.utc):%Y-%m-%d}",
+            datos=en_riesgo[:25],
+        )
+        return 1 if emitida else 0
+
+    async def _detectar_inventario_muerto(self) -> int:
+        """P3 · comprador — capital atrapado en stock sin venta en 30 días."""
+        query = """
+            SELECT
+                UPPER(TRIM(i.nombre)) as nombre,
+                COALESCE(i.cantidad_disponible, 0) as stock,
+                p.costo_unitario
+            FROM items i
+            LEFT JOIN productos p ON p.nombre = UPPER(TRIM(i.nombre))
+            WHERE COALESCE(i.cantidad_disponible, 0) > 0
+              AND NOT EXISTS (
+                  SELECT 1 FROM reportes_ventas_30dias v
+                  WHERE UPPER(TRIM(v.nombre)) = UPPER(TRIM(i.nombre))
+                    AND v.fecha_venta >= CURRENT_DATE - INTERVAL '30 days'
+              )
+        """
+        result = await self.db.execute(text(query))
+        filas = [dict(r._asdict()) for r in result.fetchall()]
+        if not filas:
+            return 0
+
+        detalle = []
+        capital_total = 0.0
+        for f in filas:
+            costo = float(f["costo_unitario"]) if f["costo_unitario"] is not None else None
+            valor = semantica.valor_inventario_costo(float(f["stock"] or 0), costo)
+            if valor:
+                capital_total += valor
+            detalle.append(
+                {"nombre": f["nombre"], "stock": float(f["stock"] or 0), "valor_costo": valor}
+            )
+
+        detalle.sort(key=lambda x: x["valor_costo"] or 0, reverse=True)
+
+        emitida = await self._emitir(
+            codigo_alerta="inventario_muerto",
+            prioridad="P3",
+            titulo=f"{len(detalle)} productos sin una sola venta en 30 días",
+            que_pasa=(
+                f"Hay {len(detalle)} productos con stock y cero ventas en 30 días. "
+                f"Capital atrapado (al costo): ${capital_total:,.0f}."
+            ),
+            por_que=(
+                "Causas probables por orden de frecuencia: producto no exhibido o mal ubicado, "
+                "precio fuera de mercado, producto obsoleto/de temporada pasada, o quiebre "
+                "fantasma (el sistema dice que hay stock pero físicamente no está)."
+            ),
+            que_hacer=(
+                "Para el top del detalle: 1) verificar exhibición física (conteo dirigido); "
+                "2) si está exhibido, aplicar rebaja de salida escalonada; 3) si lleva más de "
+                "90 días, negociar devolución al proveedor o liquidar. No recomprar ninguno."
+            ),
+            dueno="comprador",
+            impacto_dinero=capital_total,
+            clave_dedup=f"inventario_muerto:{datetime.now(timezone.utc):%Y-%W}",
+            datos=detalle[:25],
+        )
+        return 1 if emitida else 0
+
+    async def _detectar_quiebre_fantasma(self) -> int:
+        """P2 · gerente_tienda — stock en sistema pero la venta se apagó.
+
+        Proxy Fase 1: vendía de forma consistente en la primera quincena del
+        período y lleva 7+ días en cero con stock disponible.
+        """
+        query = """
+            WITH ventana AS (
+                SELECT
+                    nombre,
+                    SUM(CASE WHEN fecha_venta < CURRENT_DATE - INTERVAL '7 days'
+                             THEN cantidad ELSE 0 END) as unidades_previas,
+                    SUM(CASE WHEN fecha_venta >= CURRENT_DATE - INTERVAL '7 days'
+                             THEN cantidad ELSE 0 END) as unidades_ult_7d,
+                    AVG(precio) as precio_promedio,
+                    AVG(precio_promedio_compra) as costo_promedio
+                FROM reportes_ventas_30dias
+                WHERE fecha_venta >= CURRENT_DATE - INTERVAL '30 days'
+                GROUP BY nombre
+            )
+            SELECT
+                v.nombre,
+                v.unidades_previas,
+                v.precio_promedio,
+                v.costo_promedio,
+                COALESCE(i.cantidad_disponible, 0) as stock_actual
+            FROM ventana v
+            JOIN items i ON UPPER(TRIM(i.nombre)) = UPPER(TRIM(v.nombre))
+            WHERE v.unidades_ult_7d = 0
+              AND v.unidades_previas >= 5
+              AND COALESCE(i.cantidad_disponible, 0) > 0
+        """
+        result = await self.db.execute(text(query))
+        filas = [dict(r._asdict()) for r in result.fetchall()]
+        if not filas:
+            return 0
+
+        detalle = []
+        venta_en_riesgo = 0.0
+        for f in filas:
+            vd_previa = semantica.venta_diaria(float(f["unidades_previas"] or 0), 23)
+            vp = semantica.venta_perdida(vd_previa, 7, float(f["precio_promedio"] or 0))
+            venta_en_riesgo += vp
+            detalle.append(
+                {
+                    "nombre": f["nombre"],
+                    "stock_sistema": float(f["stock_actual"] or 0),
+                    "venta_diaria_previa": round(vd_previa, 2),
+                    "venta_perdida_7d": round(vp, 2),
+                }
+            )
+        detalle.sort(key=lambda x: x["venta_perdida_7d"], reverse=True)
+
+        emitida = await self._emitir(
+            codigo_alerta="quiebre_fantasma",
+            prioridad="P2",
+            titulo=f"{len(detalle)} posibles quiebres fantasma: hay stock en sistema pero no venden",
+            que_pasa=(
+                f"{len(detalle)} productos que vendían de forma consistente llevan 7+ días sin "
+                f"una sola venta, aunque el sistema muestra stock disponible. Venta en riesgo: "
+                f"${venta_en_riesgo:,.0f} por semana."
+            ),
+            por_que=(
+                "Cuando hay stock en sistema pero la venta se apaga de golpe, la causa más "
+                "probable es que el producto NO está físicamente disponible: error de "
+                "inventario, producto en bodega sin exhibir, dañado, o mal ubicado."
+            ),
+            que_hacer=(
+                "Conteo dirigido HOY de los productos del detalle: verificar existencia física "
+                "y exhibición. Registrar el conteo en el sistema para ajustar el libro y medir "
+                "exactitud. Si el stock real es cero, generar orden de compra inmediata."
+            ),
+            dueno="gerente_tienda",
+            impacto_dinero=venta_en_riesgo,
+            clave_dedup=f"quiebre_fantasma:{datetime.now(timezone.utc):%Y-%W}",
+            datos=detalle[:25],
+        )
+        return 1 if emitida else 0
+
+    async def _detectar_facturas_por_vencer(self) -> int:
+        """P2 · finanzas — facturas de proveedor que vencen en 7 días o menos."""
+        query = """
+            SELECT
+                proveedor,
+                fecha,
+                MAX(total_fact) as monto
+            FROM facturas_proveedor
+            GROUP BY proveedor, fecha
+        """
+        try:
+            result = await self.db.execute(text(query))
+        except Exception:
+            await self.db.rollback()
+            return 0
+        filas = [dict(r._asdict()) for r in result.fetchall()]
+
+        hoy = datetime.now(timezone.utc).date()
+        por_vencer = []
+        total = 0.0
+        for f in filas:
+            fecha_fact = f["fecha"]
+            if hasattr(fecha_fact, "date"):
+                fecha_fact = fecha_fact.date()
+            vence = fecha_fact + timedelta(days=semantica.DIAS_PLAZO_PAGO_DEFAULT)
+            dias_restantes = (vence - hoy).days
+            if 0 <= dias_restantes <= 7:
+                monto = float(f["monto"] or 0)
+                total += monto
+                por_vencer.append(
+                    {
+                        "proveedor": f["proveedor"],
+                        "fecha_factura": str(fecha_fact),
+                        "vence": str(vence),
+                        "dias_restantes": dias_restantes,
+                        "monto": monto,
+                    }
+                )
+
+        if not por_vencer:
+            return 0
+        por_vencer.sort(key=lambda x: x["dias_restantes"])
+
+        emitida = await self._emitir(
+            codigo_alerta="facturas_por_vencer",
+            prioridad="P2",
+            titulo=f"{len(por_vencer)} facturas de proveedor vencen en los próximos 7 días",
+            que_pasa=(
+                f"Compromisos de pago por ${total:,.0f} vencen esta semana "
+                f"({len(por_vencer)} facturas)."
+            ),
+            por_que=(
+                f"Vencimiento calculado con el plazo estándar de "
+                f"{semantica.DIAS_PLAZO_PAGO_DEFAULT} días desde la fecha de factura."
+            ),
+            que_hacer=(
+                "Programar los pagos en orden de vencimiento. Si la caja no alcanza, "
+                "negociar extensión ANTES del vencimiento (pagar tarde sin avisar deteriora "
+                "las condiciones futuras del proveedor)."
+            ),
+            dueno="finanzas",
+            impacto_dinero=total,
+            clave_dedup=f"facturas_por_vencer:{hoy:%Y-%W}",
+            datos=por_vencer[:25],
+        )
+        return 1 if emitida else 0
+
+    async def _detectar_exactitud_baja(self) -> int:
+        """P4 · gerente_tienda — la exactitud de inventario impide automatizar."""
+        try:
+            from app.services.inventario_perpetuo import InventarioPerpetuoService
+
+            exactitud = await InventarioPerpetuoService(self.db).get_exactitud(dias=30)
+        except Exception:
+            await self.db.rollback()
+            return 0
+
+        pct = exactitud.get("exactitud_pct")
+        if pct is None or pct >= 95.0 or exactitud.get("conteos_totales", 0) < 10:
+            return 0
+
+        emitida = await self._emitir(
+            codigo_alerta="exactitud_inventario_baja",
+            prioridad="P4",
+            titulo=f"Exactitud de inventario en {pct}%: bajo el mínimo para automatizar (95%)",
+            que_pasa=(
+                f"De {exactitud['conteos_totales']} conteos en 30 días, solo "
+                f"{exactitud['conteos_exactos']} coincidieron con el sistema ({pct}%). "
+                f"Discrepancia valorizada: ${exactitud['valor_discrepancia_absoluta']:,.0f}."
+            ),
+            por_que=(
+                "Discrepancias sistemáticas indican procesos rotos: recepciones sin registrar, "
+                "ventas sin descargar stock, merma no reportada, o robo. Mientras el libro no "
+                "sea confiable, toda decisión automática de compra hereda el error."
+            ),
+            que_hacer=(
+                "Aumentar frecuencia de conteos dirigidos (usar el plan priorizado por riesgo), "
+                "auditar el proceso de recepción de mercancía esta semana, y clasificar la "
+                "causa de cada discrepancia grande (proceso vs. merma vs. robo)."
+            ),
+            dueno="gerente_tienda",
+            impacto_dinero=float(exactitud.get("valor_discrepancia_absoluta") or 0),
+            clave_dedup=f"exactitud_baja:{datetime.now(timezone.utc):%Y-%m}",
+            datos=exactitud,
+        )
+        return 1 if emitida else 0
+
+    # ------------------------------------------------------------- orquestación
+
+    async def evaluar(self) -> Dict[str, Any]:
+        """Corre todos los detectores, dedup incluida, y expira vencidas."""
+        emitidas = 0
+        detectores = [
+            self._detectar_margen_negativo,
+            self._detectar_quiebre_inminente,
+            self._detectar_quiebre_fantasma,
+            self._detectar_inventario_muerto,
+            self._detectar_facturas_por_vencer,
+            self._detectar_exactitud_baja,
+        ]
+        errores = []
+        for detector in detectores:
+            try:
+                emitidas += await detector()
+            except Exception as e:  # un detector roto no tumba a los demás
+                await self.db.rollback()
+                errores.append({"detector": detector.__name__, "error": str(e)})
+
+        # Expirar pendientes vencidas (el SLA importa: lo viejo sin acción se archiva)
+        await self.db.execute(
+            text(
+                """
+                UPDATE decisiones SET estado = 'expirada'
+                WHERE estado = 'pendiente' AND vence_en < NOW()
+                """
+            )
+        )
+        await self.db.commit()
+        return {"decisiones_emitidas": emitidas, "errores": errores}
+
+    async def get_bandeja(
+        self,
+        dueno: Optional[str] = None,
+        estado: str = "pendiente",
+        limite: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """Bandeja de decisiones ordenada por prioridad y dinero en juego."""
+        query = """
+            SELECT id, codigo_alerta, prioridad, titulo, que_pasa, por_que, que_hacer,
+                   impacto_dinero, dueno, vence_en, estado, datos, created_at
+            FROM decisiones
+            WHERE (:estado = 'todas' OR estado = :estado)
+              AND (:dueno IS NULL OR dueno = :dueno)
+            ORDER BY prioridad ASC, impacto_dinero DESC NULLS LAST, created_at DESC
+            LIMIT :limite
+        """
+        result = await self.db.execute(
+            text(query), {"estado": estado, "dueno": dueno, "limite": limite}
+        )
+        filas = []
+        for r in result.fetchall():
+            fila = dict(r._asdict())
+            fila["impacto_dinero"] = (
+                float(fila["impacto_dinero"]) if fila["impacto_dinero"] is not None else None
+            )
+            filas.append(fila)
+        return filas
+
+    async def resolver(
+        self,
+        decision_id: int,
+        estado: str,
+        usuario: str,
+        nota: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Cierra una decisión registrando quién y con qué resultado.
+
+        Este registro es el insumo del circuito de aprendizaje: qué alertas
+        se aceptan, cuáles se rechazan y por qué.
+        """
+        if estado not in {"aprobada", "rechazada", "resuelta"}:
+            raise ValueError(f"Estado de resolución inválido: {estado}")
+
+        result = await self.db.execute(
+            text(
+                """
+                UPDATE decisiones
+                SET estado = :estado, resuelto_por = :usuario,
+                    resultado_nota = :nota, resuelto_en = NOW()
+                WHERE id = :id AND estado = 'pendiente'
+                RETURNING id
+                """
+            ),
+            {"estado": estado, "usuario": usuario, "nota": nota, "id": decision_id},
+        )
+        row = result.fetchone()
+        await self.db.commit()
+        if not row:
+            raise ValueError("La decisión no existe o ya no está pendiente")
+        return {"id": decision_id, "estado": estado}
+
+    async def get_resumen(self) -> Dict[str, Any]:
+        """Resumen para la cabecera de la bandeja."""
+        result = await self.db.execute(
+            text(
+                """
+                SELECT prioridad,
+                       COUNT(*) as pendientes,
+                       COALESCE(SUM(impacto_dinero), 0) as dinero
+                FROM decisiones
+                WHERE estado = 'pendiente'
+                GROUP BY prioridad
+                ORDER BY prioridad
+                """
+            )
+        )
+        por_prioridad = {
+            r[0]: {"pendientes": int(r[1]), "impacto_dinero": float(r[2])}
+            for r in result.fetchall()
+        }
+        total_dinero = sum(v["impacto_dinero"] for v in por_prioridad.values())
+        total_pendientes = sum(v["pendientes"] for v in por_prioridad.values())
+        return {
+            "pendientes": total_pendientes,
+            "impacto_dinero_total": round(total_dinero, 2),
+            "por_prioridad": por_prioridad,
+        }
