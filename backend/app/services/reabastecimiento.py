@@ -44,7 +44,7 @@ class ReabastecimientoService:
                     STDDEV_SAMP(h.unidades) as sigma_dias_con_venta,
                     AVG(h.unidades) as media_dias_con_venta
                 FROM ventas_diarias_historicas h
-                WHERE h.fecha >= CURRENT_DATE - CAST(:dias || ' days' AS INTERVAL)
+                WHERE h.fecha >= CURRENT_DATE - CAST(:dias AS INTEGER)
                 GROUP BY h.producto_id
                 HAVING SUM(h.unidades) > 0
             )

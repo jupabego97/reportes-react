@@ -87,10 +87,10 @@ class ForecastService:
                    h.precio_promedio, h.costo_promedio
             FROM ventas_diarias_historicas h
             JOIN productos p ON p.id = h.producto_id
-            WHERE h.fecha >= CURRENT_DATE - CAST(:dias_max || ' days' AS INTERVAL)
+            WHERE h.fecha >= CURRENT_DATE - CAST(:dias_max AS INTEGER)
               AND h.producto_id IN (
                   SELECT DISTINCT producto_id FROM ventas_diarias_historicas
-                  WHERE fecha >= CURRENT_DATE - CAST(:activos || ' days' AS INTERVAL)
+                  WHERE fecha >= CURRENT_DATE - CAST(:activos AS INTEGER)
                     AND unidades > 0
               )
             ORDER BY h.producto_id, h.fecha
@@ -290,7 +290,7 @@ class ForecastService:
             FROM forecasts f
             LEFT JOIN ventas_diarias_historicas h
                    ON h.producto_id = f.producto_id AND h.fecha = f.fecha_objetivo
-            WHERE f.fecha_objetivo >= CURRENT_DATE - CAST(:dias || ' days' AS INTERVAL)
+            WHERE f.fecha_objetivo >= CURRENT_DATE - CAST(:dias AS INTEGER)
               AND f.fecha_objetivo < CURRENT_DATE
         """
         result = await self.db.execute(text(query), {"dias": dias})
