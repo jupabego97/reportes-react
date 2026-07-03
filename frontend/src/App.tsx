@@ -22,6 +22,7 @@ import { Insights } from './pages/Insights';
 import { CEODashboard } from './pages/CEODashboard';
 import { Decisiones } from './pages/Decisiones';
 import { Forecast } from './pages/Forecast';
+import { OrdenesCompra } from './pages/OrdenesCompra';
 import { initializeTheme } from './stores/useThemeStore';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -73,6 +74,7 @@ function App() {
               <Route path="compras" element={<Compras />} />
               <Route path="decisiones" element={<Decisiones />} />
               <Route path="forecast" element={<Forecast />} />
+              <Route path="ordenes-compra" element={<OrdenesCompra />} />
               <Route path="inventario" element={<Inventario />} />
               <Route path="proveedores" element={<Proveedores />} />
               <Route path="facturas" element={<FacturasProveedor />} />

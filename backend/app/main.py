@@ -28,6 +28,9 @@ from app.routes.maestros import router as maestros_router
 from app.routes.inventario_perpetuo import router as inventario_perpetuo_router
 from app.routes.forecast import router as forecast_router
 from app.routes.reabastecimiento import router as reabastecimiento_router
+from app.routes.ordenes_compra import router as ordenes_compra_router
+from app.routes.scorecard_proveedores import router as scorecard_proveedores_router
+from app.routes.merma import router as merma_router
 
 settings = get_settings()
 
@@ -93,6 +96,9 @@ app.include_router(maestros_router)
 app.include_router(inventario_perpetuo_router)
 app.include_router(forecast_router)
 app.include_router(reabastecimiento_router)
+app.include_router(ordenes_compra_router)
+app.include_router(scorecard_proveedores_router)
+app.include_router(merma_router)
 
 
 @app.get("/")

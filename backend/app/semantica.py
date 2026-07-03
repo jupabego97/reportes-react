@@ -222,6 +222,55 @@ def stock_seguridad(
 
 
 # =============================================================================
+# Compras (Fase 3): restricciones reales y desempeño de proveedores
+# =============================================================================
+
+# Causas canónicas de merma; cada una tiene dueño y tratamiento distinto
+CAUSAS_MERMA = {"vencimiento", "dano", "robo_externo", "robo_interno", "error_administrativo"}
+
+# Umbral de merma sobre venta que dispara alerta (world-class < 1%)
+MERMA_PCT_ALERTA = 1.0
+
+# OTIF mínimo aceptable de un proveedor (objetivo industria: > 95%)
+OTIF_OBJETIVO_PCT = 95.0
+# Deterioro que dispara alerta: caída de más de 5 puntos vs su histórico
+OTIF_CAIDA_ALERTA_PTS = 5.0
+
+
+def redondear_a_empaque(cantidad: float, unidades_por_empaque: int) -> int:
+    """Redondea una cantidad sugerida al múltiplo de empaque del proveedor.
+
+    Regla: SIEMPRE hacia arriba si la necesidad es > 0 (pedir de menos
+    garantiza quiebre; el sobrante queda como cobertura). Con empaque de 1
+    devuelve el entero superior.
+    """
+    cant = float(cantidad or 0)
+    if cant <= 0:
+        return 0
+    empaque = max(int(unidades_por_empaque or 1), 1)
+    return int(math.ceil(cant / empaque)) * empaque
+
+
+def otif_pct(entregas_a_tiempo_completas: int, entregas_totales: int) -> Optional[float]:
+    """OTIF = % de órdenes entregadas a tiempo Y completas.
+
+    "A tiempo" = recibida en o antes de la fecha promesa.
+    "Completa" = cantidad recibida >= cantidad pedida en todas las líneas.
+    Es binaria por orden: una entrega tarde O incompleta no cuenta.
+    """
+    if not entregas_totales or entregas_totales <= 0:
+        return None
+    return entregas_a_tiempo_completas / entregas_totales * 100.0
+
+
+def fill_rate_pct(unidades_recibidas: float, unidades_pedidas: float) -> Optional[float]:
+    """Fill rate = unidades recibidas / pedidas × 100 (parcialidad de entregas)."""
+    if not unidades_pedidas or unidades_pedidas <= 0:
+        return None
+    return min(float(unidades_recibidas or 0) / float(unidades_pedidas), 1.0) * 100.0
+
+
+# =============================================================================
 # Venta perdida (la métrica que financia el programa)
 # =============================================================================
 

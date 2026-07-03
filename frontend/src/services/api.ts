@@ -316,4 +316,30 @@ export const apiService = {
   registrarConteo: (nombre_producto: string, stock_fisico: number, motivo?: string) =>
     api.post<any>('/api/inventario-perpetuo/conteos', { nombre_producto, stock_fisico, motivo }),
   cargarStockInicial: () => api.post<any>('/api/inventario-perpetuo/carga-inicial'),
+
+  // Órdenes de compra (Fase 3)
+  generarOrdenesCompra: () => api.post<any>('/api/ordenes-compra/generar'),
+  getOrdenesCompra: (params?: { estado?: string; limite?: number }) =>
+    api.get<any[]>('/api/ordenes-compra', params),
+  getOrdenCompraDetalle: (id: number) => api.get<any>(`/api/ordenes-compra/${id}`),
+  aprobarOrdenCompra: (id: number) => api.post<any>(`/api/ordenes-compra/${id}/aprobar`),
+  enviarOrdenCompra: (id: number) => api.post<any>(`/api/ordenes-compra/${id}/enviar`),
+  recibirOrdenCompra: (
+    id: number,
+    recepciones: Array<{ producto_id: number; cantidad_recibida: number }>,
+  ) => api.post<any>(`/api/ordenes-compra/${id}/recibir`, { recepciones }),
+  cancelarOrdenCompra: (id: number) => api.post<any>(`/api/ordenes-compra/${id}/cancelar`),
+
+  // Scorecard de proveedores (Fase 3)
+  getScorecardProveedores: (dias?: number) =>
+    api.get<any[]>('/api/scorecard-proveedores', { dias }),
+
+  // Merma (Fase 3)
+  registrarMerma: (payload: {
+    nombre_producto: string;
+    causa: string;
+    cantidad: number;
+    nota?: string;
+  }) => api.post<any>('/api/merma/registrar', payload),
+  getReporteMerma: (dias?: number) => api.get<any>('/api/merma/reporte', { dias }),
 };

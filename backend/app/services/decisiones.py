@@ -579,6 +579,149 @@ class DecisionesService:
         )
         return 1 if emitida else 0
 
+    async def _detectar_proveedor_deteriorado(self) -> int:
+        """P3 · comprador — el OTIF de un proveedor cayó vs su histórico.
+
+        Un proveedor errático obliga a más stock de seguridad (capital) y
+        causa quiebres. Detectarlo a las 3 órdenes, no al trimestre.
+        """
+        try:
+            from app.services.scorecard_proveedores import ScorecardProveedoresService
+
+            deteriorados = await ScorecardProveedoresService(self.db).get_deteriorados()
+        except Exception:
+            await self.db.rollback()
+            return 0
+
+        emitidas = 0
+        for d in deteriorados:
+            emitida = await self._emitir(
+                codigo_alerta="proveedor_deteriorado",
+                prioridad="P3",
+                titulo=(
+                    f"{d['proveedor']}: OTIF cayó {d['caida_pts']} pts "
+                    f"({d['otif_historico']}% → {d['otif_reciente']}%)"
+                ),
+                que_pasa=(
+                    f"En las últimas {d['ordenes_recientes']} órdenes, {d['proveedor']} "
+                    f"entregó a tiempo y completo el {d['otif_reciente']}% de las veces; "
+                    f"su histórico de 90 días era {d['otif_historico']}%."
+                ),
+                por_que=(
+                    "Un deterioro sostenido suele anticipar problemas del proveedor "
+                    "(capacidad, flujo de caja, transporte). Cada entrega tardía o "
+                    "incompleta se paga en quiebres y stock de seguridad extra."
+                ),
+                que_hacer=(
+                    "Contactar al proveedor y pedir causa y plan. Mientras tanto: subir "
+                    "su lead time registrado (el sistema recalculará ROP y SS) y evaluar "
+                    "proveedor alterno para los productos clase A que le compras."
+                ),
+                dueno="comprador",
+                clave_dedup=f"proveedor_deteriorado:{d['proveedor_id']}",
+                datos=d,
+            )
+            emitidas += 1 if emitida else 0
+        return emitidas
+
+    async def _detectar_merma_alta(self) -> int:
+        """P3 · gerente_tienda — la merma del mes supera el objetivo (1% de la venta)."""
+        try:
+            from app.services.merma import MermaService
+
+            reporte = await MermaService(self.db).get_reporte(dias=30)
+        except Exception:
+            await self.db.rollback()
+            return 0
+
+        pct = reporte.get("merma_pct_sobre_venta")
+        if pct is None or pct < semantica.MERMA_PCT_ALERTA:
+            return 0
+
+        causa_principal = (
+            reporte["por_causa"][0]["causa"] if reporte.get("por_causa") else "desconocida"
+        )
+        emitida = await self._emitir(
+            codigo_alerta="merma_alta",
+            prioridad="P3",
+            titulo=(
+                f"Merma del mes: {pct:.2f}% de la venta "
+                f"(${reporte['merma_total_valor']:,.0f}) — objetivo < {semantica.MERMA_PCT_ALERTA}%"
+            ),
+            que_pasa=(
+                f"La merma valorizada de 30 días es ${reporte['merma_total_valor']:,.0f} "
+                f"({pct:.2f}% de la venta). La causa principal es '{causa_principal}'."
+            ),
+            por_que=(
+                "Cada causa tiene un dueño distinto: vencimiento apunta a sobre-compra o "
+                "mala rotación; daño a manipulación; robo a seguridad; error administrativo "
+                "a proceso. El desglose por causa está en los datos de esta decisión."
+            ),
+            que_hacer=(
+                f"Atacar la causa '{causa_principal}' primero (es la mayor). Revisar el top "
+                "de productos con merma en los datos adjuntos y asignar acción por causa."
+            ),
+            dueno="gerente_tienda",
+            impacto_dinero=reporte["merma_total_valor"],
+            clave_dedup=f"merma_alta:{datetime.now(timezone.utc):%Y-%m}",
+            datos={
+                "por_causa": reporte.get("por_causa", []),
+                "top_productos": reporte.get("top_productos", [])[:10],
+            },
+        )
+        return 1 if emitida else 0
+
+    async def _detectar_oc_vencida_sin_recibir(self) -> int:
+        """P2 · comprador — OC enviadas cuya fecha promesa ya pasó sin recepción."""
+        query = """
+            SELECT o.id, o.numero, o.fecha_promesa, o.total_costo,
+                   p.nombre as proveedor,
+                   CURRENT_DATE - o.fecha_promesa as dias_vencida
+            FROM ordenes_compra o
+            LEFT JOIN proveedores p ON p.id = o.proveedor_id
+            WHERE o.estado = 'enviada'
+              AND o.fecha_promesa < CURRENT_DATE
+            ORDER BY o.fecha_promesa
+        """
+        try:
+            result = await self.db.execute(text(query))
+            vencidas = result.fetchall()
+        except Exception:
+            await self.db.rollback()
+            return 0
+
+        emitidas = 0
+        for oc in vencidas:
+            total = float(oc[3]) if oc[3] is not None else None
+            proveedor = oc[4] or "sin proveedor"
+            emitida = await self._emitir(
+                codigo_alerta="oc_vencida_sin_recibir",
+                prioridad="P2",
+                titulo=(
+                    f"OC {oc[1]} de {proveedor} lleva {int(oc[5])} días vencida sin recibirse"
+                ),
+                que_pasa=(
+                    f"La orden {oc[1]} tenía fecha promesa {oc[2]} y no se ha registrado "
+                    f"recepción. Los productos que cubría siguen descubiertos."
+                ),
+                por_que=(
+                    "O el proveedor incumplió (cuenta contra su OTIF) o la mercancía llegó "
+                    "y nadie registró la recepción — en ese caso el inventario perpetuo está "
+                    "subestimado y el sistema pedirá de más."
+                ),
+                que_hacer=(
+                    f"Confirmar con {proveedor} el estado del despacho. Si ya llegó, "
+                    "registrar la recepción hoy mismo. Si no llegará, cancelar la OC y "
+                    "regenerar el pedido con otro proveedor."
+                ),
+                dueno="comprador",
+                impacto_dinero=total,
+                clave_dedup=f"oc_vencida:{oc[0]}",
+                datos={"orden_id": int(oc[0]), "numero": oc[1], "proveedor": proveedor},
+            )
+            emitidas += 1 if emitida else 0
+        return emitidas
+
     # ------------------------------------------------------------- orquestación
 
     async def evaluar(self) -> Dict[str, Any]:
@@ -593,6 +736,9 @@ class DecisionesService:
             self._detectar_exactitud_baja,
             self._detectar_forecast_degradado,
             self._detectar_venta_perdida_semanal,
+            self._detectar_proveedor_deteriorado,
+            self._detectar_merma_alta,
+            self._detectar_oc_vencida_sin_recibir,
         ]
         errores = []
         for detector in detectores:
