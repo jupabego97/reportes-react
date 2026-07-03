@@ -32,6 +32,18 @@ class ApiClient {
     return headers;
   }
 
+  private async doFetch(url: string, init: RequestInit): Promise<Response> {
+    try {
+      return await fetch(url, init);
+    } catch {
+      // TypeError "Failed to fetch": el servidor no respondió (apagado, URL mal
+      // configurada o bloqueo CORS). Damos un mensaje accionable.
+      throw new Error(
+        `No se pudo conectar con el servidor (${this.baseUrl}). Verifica que el backend esté corriendo y desplegado con la última versión.`,
+      );
+    }
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
     if (response.status === 401) {
       useAuthStore.getState().logout();
@@ -61,7 +73,7 @@ class ApiClient {
       });
     }
 
-    const response = await fetch(url.toString(), {
+    const response = await this.doFetch(url.toString(), {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -70,7 +82,7 @@ class ApiClient {
   }
 
   async post<T>(endpoint: string, data?: any): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const response = await this.doFetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: data ? JSON.stringify(data) : undefined,
@@ -94,7 +106,7 @@ class ApiClient {
       });
     }
 
-    const response = await fetch(url.toString(), {
+    const response = await this.doFetch(url.toString(), {
       method: 'GET',
       headers: {
         ...this.getHeaders(),

@@ -29,7 +29,7 @@ const urgenciaEstilo: Record<string, string> = {
 export function Forecast() {
   const queryClient = useQueryClient();
 
-  const { data: backtest, isLoading: cargandoBacktest } = useQuery({
+  const { data: backtest, isLoading: cargandoBacktest, error: errorBacktest } = useQuery({
     queryKey: ['forecast-backtest'],
     queryFn: () => apiService.getUltimoBacktest(),
     staleTime: 60000,
@@ -125,6 +125,14 @@ export function Forecast() {
           </Button>
         </div>
       </div>
+
+      {errorBacktest != null && (
+        <Card className="border-red-300 bg-red-50">
+          <CardContent className="py-4 text-sm text-red-700">
+            {(errorBacktest as Error).message}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Gobernanza del modelo */}
       <Card className={cn(tieneBacktest && !championGana && 'border-orange-500/60')}>

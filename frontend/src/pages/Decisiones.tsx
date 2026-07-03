@@ -212,7 +212,7 @@ export function Decisiones() {
     staleTime: 30000,
   });
 
-  const { data: decisiones, isLoading } = useQuery<Decision[]>({
+  const { data: decisiones, isLoading, error: errorDecisiones } = useQuery<Decision[]>({
     queryKey: ['decisiones', dueno ?? 'todos'],
     queryFn: () => apiService.getDecisiones({ dueno, estado: 'pendiente', limite: 100 }),
     staleTime: 30000,
@@ -298,7 +298,14 @@ export function Decisiones() {
         ))}
       </div>
 
-      {isLoading ? (
+      {errorDecisiones ? (
+        <Card className="border-red-300 bg-red-50">
+          <CardContent className="flex items-center gap-2 py-6 text-sm text-red-700">
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+            <span>{(errorDecisiones as Error).message}</span>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-40 w-full" />

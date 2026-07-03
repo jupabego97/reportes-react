@@ -1,8 +1,12 @@
 """
 Aplicación FastAPI principal.
 """
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
 from app.routes import (
@@ -34,6 +38,32 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+logger = logging.getLogger("app")
+
+
+class ErroresComoJSONMiddleware(BaseHTTPMiddleware):
+    """Convierte excepciones no controladas en JSON 500.
+
+    Sin esto, una excepción no controlada corta la respuesta antes de que
+    CORSMiddleware agregue sus cabeceras, y el navegador la reporta como
+    'Failed to fetch' en lugar de mostrar el error real.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        try:
+            return await call_next(request)
+        except Exception:
+            logger.exception("Error no controlado en %s %s", request.method, request.url.path)
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Error interno del servidor. Revisa los logs del backend."},
+            )
+
+
+# Se registra antes que CORS para que CORS quede por fuera y siempre
+# agregue sus cabeceras, incluso en errores 500.
+app.add_middleware(ErroresComoJSONMiddleware)
 
 # Configurar CORS desde variables de entorno
 app.add_middleware(
