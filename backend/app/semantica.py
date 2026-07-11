@@ -440,6 +440,73 @@ def descomponer_varianza_venta(
 
 
 # =============================================================================
+# Autonomía (Fase 5)
+# =============================================================================
+
+# Impacto máximo por defecto para Nivel 1 si no hay política específica
+AUTONOMIA_NIVEL1_MAX_IMPACTO_DEFAULT = 100_000.0
+
+# Códigos que NUNCA se auto-ejecutan (siempre humano)
+AUTONOMIA_PROHIBIDOS = {
+    "margen_negativo",
+    "quiebre_inminente",
+    "quiebre_fantasma",
+    "oc_vencida_sin_recibir",
+    "proveedor_deteriorado",
+    "surtido_eliminar",
+}
+
+# Códigos de comité (Nivel 3) — impacto alto o estructural
+AUTONOMIA_COMITE = {
+    "surtido_eliminar",
+    "forecast_degradado",
+}
+
+
+def nivel_autonomia(
+    codigo_alerta: str,
+    impacto_dinero: Optional[float] = None,
+    auto_max_impacto: Optional[float] = None,
+    habilitado: bool = True,
+) -> int:
+    """Nivel de autonomía: 1=auto, 2=aprobación humana, 3=comité.
+
+    Reglas:
+    - Códigos prohibidos → siempre 2 (o 3 si están en comité)
+    - Si política deshabilitada → 2
+    - Si impacto <= umbral de política → 1
+    - Si código de comité → 3
+    - Resto → 2
+    """
+    codigo = (codigo_alerta or "").strip()
+    if codigo in AUTONOMIA_COMITE:
+        return 3
+    if codigo in AUTONOMIA_PROHIBIDOS:
+        return 2
+    if not habilitado:
+        return 2
+    umbral = (
+        float(auto_max_impacto)
+        if auto_max_impacto is not None
+        else AUTONOMIA_NIVEL1_MAX_IMPACTO_DEFAULT
+    )
+    impacto = float(impacto_dinero or 0)
+    if impacto <= umbral:
+        return 1
+    return 2
+
+
+def score_riesgo(impacto_dinero: Optional[float], probabilidad: float = 0.5) -> float:
+    """Score = impacto × probabilidad heurística (0–1)."""
+    return max(float(impacto_dinero or 0), 0.0) * min(max(float(probabilidad), 0.0), 1.0)
+
+
+def score_oportunidad(impacto_dinero: Optional[float], capturabilidad: float = 0.5) -> float:
+    """Score de oportunidad = impacto × capturabilidad estimada."""
+    return max(float(impacto_dinero or 0), 0.0) * min(max(float(capturabilidad), 0.0), 1.0)
+
+
+# =============================================================================
 # Venta perdida (la métrica que financia el programa)
 # =============================================================================
 

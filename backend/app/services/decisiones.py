@@ -863,6 +863,45 @@ class DecisionesService:
         )
         return 1 if emitida else 0
 
+    async def _detectar_autonomia_deshabilitada(self) -> int:
+        """P4 · admin — el ciclo nocturno no corrió en las últimas 48h."""
+        try:
+            from app.services.orquestador import OrquestadorService
+
+            horas = await OrquestadorService(self.db).horas_desde_ultimo_ok()
+        except Exception:
+            await self.db.rollback()
+            return 0
+
+        # Sin historial de jobs aún: no alertar (primera instalación)
+        if horas is None:
+            return 0
+        if horas < 48:
+            return 0
+
+        emitida = await self._emitir(
+            codigo_alerta="autonomia_deshabilitada",
+            prioridad="P4",
+            titulo=f"Ciclo nocturno sin correr hace {horas:.0f} horas",
+            que_pasa=(
+                f"El orquestador no completó un ciclo exitoso en {horas:.0f} horas. "
+                "Historial, forecast, decisiones y autonomía Nivel 1 pueden estar desactualizados."
+            ),
+            por_que=(
+                "Sin el ciclo automático, el sistema depende de botones manuales y las "
+                "decisiones se basan en datos viejos."
+            ),
+            que_hacer=(
+                "En Control Ejecutivo, pulsa «Correr ciclo nocturno ahora». "
+                "Configura un cron en Railway que llame a POST /api/orquestador/correr a diario."
+            ),
+            dueno="admin",
+            impacto_dinero=None,
+            clave_dedup=f"autonomia_deshabilitada:{datetime.now(timezone.utc):%Y-%m-%d}",
+            datos={"horas_desde_ultimo": round(horas, 1)},
+        )
+        return 1 if emitida else 0
+
     # ------------------------------------------------------------- orquestación
 
     async def evaluar(self) -> Dict[str, Any]:
@@ -883,6 +922,7 @@ class DecisionesService:
             self._detectar_markdown_recomendado,
             self._detectar_surtido_eliminar,
             self._detectar_margen_erosion_mix,
+            self._detectar_autonomia_deshabilitada,
         ]
         errores = []
         for detector in detectores:
@@ -956,15 +996,32 @@ class DecisionesService:
                 SET estado = :estado, resuelto_por = :usuario,
                     resultado_nota = :nota, resuelto_en = NOW()
                 WHERE id = :id AND estado = 'pendiente'
-                RETURNING id
+                RETURNING id, codigo_alerta, prioridad, impacto_dinero
                 """
             ),
             {"estado": estado, "usuario": usuario, "nota": nota, "id": decision_id},
         )
         row = result.fetchone()
-        await self.db.commit()
         if not row:
+            await self.db.commit()
             raise ValueError("La decisión no existe o ya no está pendiente")
+
+        try:
+            from app.services.aprendizaje import AprendizajeService
+
+            await AprendizajeService(self.db).registrar(
+                decision_id=int(row[0]),
+                codigo_alerta=row[1],
+                prioridad=row[2],
+                estado_final=estado,
+                impacto_dinero=float(row[3]) if row[3] is not None else None,
+                nota=nota,
+                usuario=usuario,
+            )
+        except Exception:
+            pass  # el aprendizaje no debe tumbar la resolución
+
+        await self.db.commit()
         return {"id": decision_id, "estado": estado}
 
     async def get_resumen(self) -> Dict[str, Any]:

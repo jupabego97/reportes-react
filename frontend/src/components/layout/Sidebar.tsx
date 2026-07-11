@@ -25,6 +25,7 @@ import {
   ListChecks,
   ClipboardList,
   Tags,
+  Gauge,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -50,6 +51,7 @@ type NavItem = { name: string; href: string; icon: LucideIcon };
 
 const destacadoNav: NavItem[] = [
   { name: 'Decisiones', href: '/decisiones', icon: ListChecks },
+  { name: 'Control ejecutivo', href: '/control', icon: Gauge },
   { name: 'Vista CEO', href: '/ceo', icon: PieChart },
 ];
 

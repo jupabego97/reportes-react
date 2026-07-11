@@ -24,6 +24,7 @@ import { Decisiones } from './pages/Decisiones';
 import { Forecast } from './pages/Forecast';
 import { OrdenesCompra } from './pages/OrdenesCompra';
 import { PrecioSurtido } from './pages/PrecioSurtido';
+import { ControlEjecutivo } from './pages/ControlEjecutivo';
 import { initializeTheme } from './stores/useThemeStore';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -74,6 +75,7 @@ function App() {
               <Route path="ventas" element={<Dashboard />} />
               <Route path="compras" element={<Compras />} />
               <Route path="decisiones" element={<Decisiones />} />
+              <Route path="control" element={<ControlEjecutivo />} />
               <Route path="forecast" element={<Forecast />} />
               <Route path="ordenes-compra" element={<OrdenesCompra />} />
               <Route path="precio-surtido" element={<PrecioSurtido />} />

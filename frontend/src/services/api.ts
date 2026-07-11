@@ -91,6 +91,16 @@ class ApiClient {
     return this.handleResponse<T>(response);
   }
 
+  async put<T>(endpoint: string, data?: any): Promise<T> {
+    const response = await this.doFetch(`${this.baseUrl}${endpoint}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    return this.handleResponse<T>(response);
+  }
+
   async getBlob(endpoint: string, params?: Record<string, any>): Promise<Blob> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
     
@@ -356,4 +366,19 @@ export const apiService = {
     api.post<any>(`/api/surtido/${productoId}/baja`),
   getDescomposicionCausal: (params?: { dias_reciente?: number; dias_previo?: number }) =>
     api.get<any>('/api/diagnostico/descomposicion', params),
+
+  // Autonomía y control (Fase 5)
+  correrOrquestador: () => api.post<any>('/api/orquestador/correr'),
+  getOrquestadorJobs: (limite?: number) =>
+    api.get<any[]>('/api/orquestador/jobs', { limite }),
+  getPoliticasAutonomia: () => api.get<any[]>('/api/autonomia/politicas'),
+  actualizarPoliticaAutonomia: (
+    codigo: string,
+    payload: { auto_max_impacto?: number; habilitado?: boolean },
+  ) => api.put<any>(`/api/autonomia/politicas/${codigo}`, payload),
+  getControlResumen: () => api.get<any>('/api/control/resumen'),
+  getControlRiesgos: () => api.get<any[]>('/api/control/riesgos'),
+  getControlOportunidades: () => api.get<any[]>('/api/control/oportunidades'),
+  getAprendizajeMetricas: (dias?: number) =>
+    api.get<any>('/api/aprendizaje/metricas', { dias }),
 };

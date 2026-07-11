@@ -34,6 +34,9 @@ from app.routes.merma import router as merma_router
 from app.routes.pricing import router as pricing_router
 from app.routes.surtido import router as surtido_router
 from app.routes.diagnostico import router as diagnostico_router
+from app.routes.orquestador import router as orquestador_router
+from app.routes.autonomia import router as autonomia_router
+from app.routes.control import router_aprendizaje, router_control
 
 settings = get_settings()
 
@@ -105,6 +108,10 @@ app.include_router(merma_router)
 app.include_router(pricing_router)
 app.include_router(surtido_router)
 app.include_router(diagnostico_router)
+app.include_router(orquestador_router)
+app.include_router(autonomia_router)
+app.include_router(router_aprendizaje)
+app.include_router(router_control)
 
 
 @app.get("/")
