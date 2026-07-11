@@ -24,6 +24,7 @@ import {
   PieChart,
   ListChecks,
   ClipboardList,
+  Tags,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -56,6 +57,7 @@ const operacionNav: NavItem[] = [
   { name: 'Hoy', href: '/', icon: CalendarCheck },
   { name: 'Forecast', href: '/forecast', icon: LineChart },
   { name: 'Órdenes de compra', href: '/ordenes-compra', icon: ClipboardList },
+  { name: 'Precio y surtido', href: '/precio-surtido', icon: Tags },
   { name: 'Compras', href: '/compras', icon: PackageSearch },
   { name: 'Inventario', href: '/inventario', icon: Warehouse },
   { name: 'Proveedores', href: '/proveedores', icon: Truck },

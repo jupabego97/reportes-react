@@ -271,6 +271,175 @@ def fill_rate_pct(unidades_recibidas: float, unidades_pedidas: float) -> Optiona
 
 
 # =============================================================================
+# Precio y surtido (Fase 4)
+# =============================================================================
+
+# Mínimo de observaciones con variación de precio para estimar elasticidad
+ELASTICIDAD_MIN_OBSERVACIONES = 5
+# Variación mínima de precio (coef. de variación) para no fingir elasticidad
+ELASTICIDAD_MIN_CV_PRECIO = 0.02
+
+# Umbrales de la matriz GMROI × velocidad (surtido)
+GMROI_ELIMINAR = 0.5
+GMROI_POTENCIAR = 3.0
+VELOCIDAD_REL_BAJA = 0.25
+VELOCIDAD_REL_ALTA = 1.5
+
+# Piso de margen en markdowns (5% sobre costo)
+MARKDOWN_MARGEN_MINIMO_PCT = 0.05
+
+
+def elasticidad_loglog(precios: list, cantidades: list) -> Optional[float]:
+    """Elasticidad precio-demanda por regresión log-log (OLS simple).
+
+    Devuelve None si hay menos de ELASTICIDAD_MIN_OBSERVACIONES puntos,
+    si el precio no varía lo suficiente, o si hay valores no positivos.
+    Un valor típico es negativo (p.ej. −1.2 = 1% más de precio → 1.2% menos demanda).
+    """
+    if len(precios) != len(cantidades) or len(precios) < ELASTICIDAD_MIN_OBSERVACIONES:
+        return None
+    p_vals = [float(p) for p in precios if p is not None and float(p) > 0]
+    q_vals = [float(q) for q in cantidades if q is not None and float(q) > 0]
+    if len(p_vals) != len(precios) or len(q_vals) != len(cantidades):
+        return None
+    media_p = sum(p_vals) / len(p_vals)
+    if media_p <= 0:
+        return None
+    cv = (max(p_vals) - min(p_vals)) / media_p
+    if cv < ELASTICIDAD_MIN_CV_PRECIO:
+        return None
+
+    ln_p = [math.log(p) for p in p_vals]
+    ln_q = [math.log(max(q, 0.001)) for q in q_vals]
+    n = len(ln_p)
+    mean_lp = sum(ln_p) / n
+    mean_lq = sum(ln_q) / n
+    num = sum((ln_p[i] - mean_lp) * (ln_q[i] - mean_lq) for i in range(n))
+    den = sum((ln_p[i] - mean_lp) ** 2 for i in range(n))
+    if den <= 0:
+        return None
+    return num / den
+
+
+def confianza_elasticidad(n_observaciones: int, cv_precio: float) -> str:
+    """Confianza heurística de la elasticidad estimada."""
+    if n_observaciones >= 15 and cv_precio >= 0.05:
+        return "media"
+    return "baja"
+
+
+def precio_markdown_optimo(
+    precio: float,
+    costo: Optional[float],
+    dias_sin_venta: int = 0,
+    cobertura: Optional[float] = None,
+) -> Optional[float]:
+    """Precio sugerido de markdown escalonado según antigüedad sin venta o exceso.
+
+    Secuencia conservadora: −10% / −20% / −30%, con piso de margen mínimo
+    sobre el costo (MARKDOWN_MARGEN_MINIMO_PCT). No baja del costo.
+    """
+    precio_f = float(precio or 0)
+    if precio_f <= 0:
+        return None
+
+    if dias_sin_venta >= 60 or (cobertura is not None and cobertura > 90):
+        descuento = 0.30
+    elif dias_sin_venta >= 30 or (cobertura is not None and cobertura > 60):
+        descuento = 0.20
+    else:
+        descuento = 0.10
+
+    sugerido = precio_f * (1 - descuento)
+    if costo is not None and float(costo) > 0:
+        piso = float(costo) * (1 + MARKDOWN_MARGEN_MINIMO_PCT)
+        sugerido = max(sugerido, piso)
+    return round(sugerido, 2)
+
+
+def clasificar_surtido(
+    gmroi: Optional[float],
+    velocidad_relativa: float,
+) -> str:
+    """Matriz GMROI × velocidad relativa → acción de surtido.
+
+    velocidad_relativa = venta diaria del SKU / mediana de la categoría.
+    """
+    vrel = float(velocidad_relativa or 0)
+    if gmroi is not None and float(gmroi) < GMROI_ELIMINAR:
+        return "eliminar"
+    if (
+        gmroi is not None
+        and float(gmroi) >= GMROI_POTENCIAR
+        and vrel >= VELOCIDAD_REL_ALTA
+    ):
+        return "potenciar"
+    if vrel < VELOCIDAD_REL_BAJA or (gmroi is not None and float(gmroi) < 1.0):
+        return "reducir"
+    return "mantener"
+
+
+def descomponer_varianza_venta(
+    productos_periodo_a: list,
+    productos_periodo_b: list,
+) -> dict:
+    """Descomposición volumen / precio / mix entre dos períodos por producto.
+
+    Cada elemento: {nombre, cantidad, precio, venta_neta}.
+    Identidad: delta_venta ≈ efecto_volumen + efecto_precio + efecto_mix.
+    """
+    mapa_a = {p["nombre"]: p for p in productos_periodo_a}
+    mapa_b = {p["nombre"]: p for p in productos_periodo_b}
+    todos = set(mapa_a) | set(mapa_b)
+
+    efecto_volumen = 0.0
+    efecto_precio = 0.0
+    detalle = []
+
+    for nombre in todos:
+        a = mapa_a.get(nombre, {"cantidad": 0, "precio": 0, "venta_neta": 0})
+        b = mapa_b.get(nombre, {"cantidad": 0, "precio": 0, "venta_neta": 0})
+        q0 = float(a.get("cantidad") or 0)
+        q1 = float(b.get("cantidad") or 0)
+        p0 = float(a.get("precio") or 0)
+        p1 = float(b.get("precio") or 0)
+        v0 = float(a.get("venta_neta") or q0 * p0)
+        v1 = float(b.get("venta_neta") or q1 * p1)
+
+        ev = (q1 - q0) * p0
+        ep = q1 * (p1 - p0)
+        delta = v1 - v0
+        em = delta - ev - ep
+        efecto_volumen += ev
+        efecto_precio += ep
+        if abs(delta) > 0.01:
+            detalle.append(
+                {
+                    "nombre": nombre,
+                    "delta_venta": round(delta, 2),
+                    "efecto_volumen": round(ev, 2),
+                    "efecto_precio": round(ep, 2),
+                    "efecto_mix": round(em, 2),
+                }
+            )
+
+    efecto_mix = sum(d["efecto_mix"] for d in detalle)
+    venta_a = sum(float(mapa_a.get(n, {}).get("venta_neta") or 0) for n in todos)
+    venta_b = sum(float(mapa_b.get(n, {}).get("venta_neta") or 0) for n in todos)
+    delta_total = venta_b - venta_a
+
+    return {
+        "venta_periodo_a": round(venta_a, 2),
+        "venta_periodo_b": round(venta_b, 2),
+        "delta_venta": round(delta_total, 2),
+        "efecto_volumen": round(efecto_volumen, 2),
+        "efecto_precio": round(efecto_precio, 2),
+        "efecto_mix": round(efecto_mix, 2),
+        "detalle": sorted(detalle, key=lambda x: abs(x["delta_venta"]), reverse=True),
+    }
+
+
+# =============================================================================
 # Venta perdida (la métrica que financia el programa)
 # =============================================================================
 

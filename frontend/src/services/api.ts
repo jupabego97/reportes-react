@@ -342,4 +342,18 @@ export const apiService = {
     nota?: string;
   }) => api.post<any>('/api/merma/registrar', payload),
   getReporteMerma: (dias?: number) => api.get<any>('/api/merma/reporte', { dias }),
+
+  // Pricing y surtido (Fase 4)
+  consolidarPrecios: () => api.post<any>('/api/pricing/consolidar-precios'),
+  getElasticidadesPrecio: () => api.get<any[]>('/api/pricing/elasticidades'),
+  generarMarkdowns: () => api.post<any>('/api/pricing/generar-markdowns'),
+  getOportunidadesPrecio: (limite?: number) =>
+    api.get<any[]>('/api/pricing/oportunidades', { limite }),
+  generarRevisionSurtido: () => api.post<any>('/api/surtido/generar-revision'),
+  getRevisionSurtido: (limite?: number) =>
+    api.get<any[]>('/api/surtido/revision', { limite }),
+  aplicarBajaSurtido: (productoId: number) =>
+    api.post<any>(`/api/surtido/${productoId}/baja`),
+  getDescomposicionCausal: (params?: { dias_reciente?: number; dias_previo?: number }) =>
+    api.get<any>('/api/diagnostico/descomposicion', params),
 };

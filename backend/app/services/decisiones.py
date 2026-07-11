@@ -722,6 +722,147 @@ class DecisionesService:
             emitidas += 1 if emitida else 0
         return emitidas
 
+    async def _detectar_markdown_recomendado(self) -> int:
+        """P3 · pricing — capital atrapado con plan de salida vía markdown."""
+        try:
+            from app.services.pricing import PricingService
+
+            await PricingService(self.db).sugerir_markdowns()
+            oportunidades = await PricingService(self.db).get_oportunidades_precio(limite=30)
+        except Exception:
+            await self.db.rollback()
+            return 0
+
+        if not oportunidades:
+            return 0
+
+        capital = sum(o.get("impacto_estimado") or 0 for o in oportunidades)
+        top = oportunidades[:10]
+
+        emitida = await self._emitir(
+            codigo_alerta="markdown_recomendado",
+            prioridad="P3",
+            titulo=f"{len(oportunidades)} productos con markdown recomendado",
+            que_pasa=(
+                f"Hay {len(oportunidades)} productos con inventario muerto o exceso de cobertura "
+                f"donde un markdown escalonado liberaría capital estimado en ${capital:,.0f}."
+            ),
+            por_que=(
+                "Sin rotación, el capital atrapado no genera margen y ocupa espacio que podría "
+                "ir a productos con GMROI alto. Cada día sin acción aumenta el riesgo de "
+                "obsolescencia total."
+            ),
+            que_hacer=(
+                "Revisar la lista en Precio y Surtido: aplicar markdown en el top 10, "
+                "verificar exhibición física antes de rebajar, y no recomprar estos SKUs."
+            ),
+            dueno="pricing",
+            impacto_dinero=capital,
+            clave_dedup=f"markdown_recomendado:{datetime.now(timezone.utc):%Y-%W}",
+            datos=top,
+        )
+        return 1 if emitida else 0
+
+    async def _detectar_surtido_eliminar(self) -> int:
+        """P3 · comprador — SKUs en zona eliminar de la matriz GMROI×velocidad."""
+        try:
+            from app.services.surtido import SurtidoService
+
+            revision = await SurtidoService(self.db).generar_revision()
+            metricas = await SurtidoService(self.db).get_revision_surtido(limite=200)
+        except Exception:
+            await self.db.rollback()
+            return 0
+
+        eliminar = [m for m in metricas if m.get("accion") == "eliminar"]
+        if not eliminar:
+            return 0
+
+        capital = sum(m.get("inventario_costo") or 0 for m in eliminar)
+        detalle = [
+            {
+                "nombre": m["nombre"],
+                "gmroi": m.get("gmroi"),
+                "velocidad_relativa": m.get("velocidad_relativa"),
+                "inventario_costo": m.get("inventario_costo"),
+                "transferencia_proxy_pct": m.get("transferencia_proxy_pct"),
+            }
+            for m in eliminar[:15]
+        ]
+
+        emitida = await self._emitir(
+            codigo_alerta="surtido_eliminar",
+            prioridad="P3",
+            titulo=f"{len(eliminar)} SKUs candidatos a eliminar del surtido",
+            que_pasa=(
+                f"La matriz GMROI×velocidad clasificó {len(eliminar)} productos como 'eliminar'. "
+                f"Capital en riesgo: ${capital:,.0f}."
+            ),
+            por_que=(
+                "GMROI bajo y/o velocidad por debajo del 25% de la mediana indica que el espacio "
+                "y el capital invertido no se pagan. La transferencia proxy estima qué % de la "
+                "demanda capturarían otros SKUs de la misma familia."
+            ),
+            que_hacer=(
+                "Revisar revisión de surtido: para cada candidato, confirmar si hay sustituto en "
+                "la familia. Aplicar baja lógica solo tras liquidar stock remanente."
+            ),
+            dueno="comprador",
+            impacto_dinero=capital,
+            clave_dedup=f"surtido_eliminar:{datetime.now(timezone.utc):%Y-%m}",
+            datos={"revision": revision, "candidatos": detalle},
+        )
+        return 1 if emitida else 0
+
+    async def _detectar_margen_erosion_mix(self) -> int:
+        """P4 · pricing — el mix explica caída de margen (no volumen ni precio)."""
+        try:
+            from app.services.diagnostico_causal import DiagnosticoCausalService
+
+            diag = await DiagnosticoCausalService(self.db).get_descomposicion()
+        except Exception:
+            await self.db.rollback()
+            return 0
+
+        delta_margen = float(diag.get("delta_margen") or 0)
+        delta_venta = float(diag.get("delta_venta") or 0)
+        efecto_mix = float(diag.get("efecto_mix") or 0)
+
+        if delta_margen >= 0:
+            return 0
+        if abs(efecto_mix) < abs(delta_venta) * 0.2:
+            return 0
+
+        emitida = await self._emitir(
+            codigo_alerta="margen_erosion_mix",
+            prioridad="P4",
+            titulo=f"Margen cayó ${abs(delta_margen):,.0f}: el mix de productos empeoró",
+            que_pasa=(
+                f"En los últimos {diag.get('dias_reciente', 7)} días vs el período previo, "
+                f"el margen bajó ${abs(delta_margen):,.0f} mientras la venta cambió "
+                f"${delta_venta:+,.0f}. El efecto mix (${efecto_mix:+,.0f}) explica buena "
+                f"parte de la desviación."
+            ),
+            por_que=(
+                "La mezcla de productos vendidos se desplazó hacia SKUs de menor margen o "
+                "con más descuento. No es un problema de volumen total ni de lista de precios "
+                "uniforme: es composición del ticket."
+            ),
+            que_hacer=(
+                "Revisar el detalle del diagnóstico causal: identificar familias/productos "
+                "que ganaron share con margen bajo. Evaluar exhibición, promos no rentables "
+                "y surtido complementario."
+            ),
+            dueno="pricing",
+            impacto_dinero=abs(delta_margen),
+            clave_dedup=f"margen_erosion_mix:{datetime.now(timezone.utc):%Y-%W}",
+            datos={
+                "interpretacion": diag.get("interpretacion"),
+                "detalle": diag.get("detalle", [])[:10],
+            },
+        )
+        return 1 if emitida else 0
+
     # ------------------------------------------------------------- orquestación
 
     async def evaluar(self) -> Dict[str, Any]:
@@ -739,6 +880,9 @@ class DecisionesService:
             self._detectar_proveedor_deteriorado,
             self._detectar_merma_alta,
             self._detectar_oc_vencida_sin_recibir,
+            self._detectar_markdown_recomendado,
+            self._detectar_surtido_eliminar,
+            self._detectar_margen_erosion_mix,
         ]
         errores = []
         for detector in detectores:

@@ -31,6 +31,9 @@ from app.routes.reabastecimiento import router as reabastecimiento_router
 from app.routes.ordenes_compra import router as ordenes_compra_router
 from app.routes.scorecard_proveedores import router as scorecard_proveedores_router
 from app.routes.merma import router as merma_router
+from app.routes.pricing import router as pricing_router
+from app.routes.surtido import router as surtido_router
+from app.routes.diagnostico import router as diagnostico_router
 
 settings = get_settings()
 
@@ -99,6 +102,9 @@ app.include_router(reabastecimiento_router)
 app.include_router(ordenes_compra_router)
 app.include_router(scorecard_proveedores_router)
 app.include_router(merma_router)
+app.include_router(pricing_router)
+app.include_router(surtido_router)
+app.include_router(diagnostico_router)
 
 
 @app.get("/")
